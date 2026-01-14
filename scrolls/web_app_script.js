@@ -2,6 +2,15 @@ async function init() {
   // Create a canvas tag, where we render on the browser
   const canvasTag = document.createElement('canvas');
   canvasTag.id = "renderCanvas"; // Important! This tells which CSS style to use
+   // Modify the canvas size
+ const devicePixelRatio = window.devicePixelRatio || 1;
+ const width = window.innerWidth * devicePixelRatio;
+ const height = window.innerHeight * devicePixelRatio;
+ canvasTag.width = width;
+ canvasTag.height = height; 
+ // Modify the canvas using CSS
+ canvasTag.style.width = `${window.innerWidth}px`;
+ canvasTag.style.height = `${window.innerHeight}px`;
   document.body.appendChild(canvasTag);
   // Check if the browser supports WebGPU
   if (!navigator.gpu) {
