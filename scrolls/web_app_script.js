@@ -25,6 +25,33 @@ async function init() {
   // The encoder allows us to craft different rendering spells
   const encoder = device.createCommandEncoder();
 
+ // Create a triangle geometry in CPU
+ var vertices = new Float32Array([
+   // x, y
+   0, 0.5,
+   -0.5, 0,
+   0.5,  0,
+ ]);
+
+ // Create vertex buffer to store the vertices in GPU
+ var vertexBuffer = device.createBuffer({
+   label: "Vertices",
+   size: vertices.byteLength,
+   usage: GPUBufferUsage.VERTEX | GPUBufferUsage.COPY_DST,
+ });
+ // Copy from CPU to GPU
+ device.queue.writeBuffer(vertexBuffer, 0, vertices);
+
+ // Define vertex buffer layout - how the shader should read the buffer
+ var vertexBufferLayout = {
+   arrayStride: 2 * Float32Array.BYTES_PER_ELEMENT,
+   attributes: [{
+     format: "float32x2", // 32 bits, each has two coordinates
+     offset: 0,
+     shaderLocation: 0, // position in the vertex shader
+   }],
+ };
+
  // Vertex shader code
  var vertCode = `
  @vertex // this compute the scene coordinate of each input vertex
@@ -73,6 +100,10 @@ async function init() {
       storeOp: "store",
     }]
   });
+   // add more render pass to draw the plane
+ pass.setPipeline(renderPipeline);      // which render pipeline to use
+ pass.setVertexBuffer(0, vertexBuffer); // which vertex buffer is used at location 0
+ pass.draw(vertices.length / 2);        // how many vertices to draw
   pass.end(); // end the pass
   // Create the command buffer using the encoder
   const commandBuffer = encoder.finish();
