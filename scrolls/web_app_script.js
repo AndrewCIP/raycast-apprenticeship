@@ -1,6 +1,6 @@
-import Renderer from '/lib/Viz/2DRenderer.js'
- import Triangle1 from '/lib/Scene/Triangle1.js'
- import Triangle2 from '/lib/Scene/Triangle2.js'
+import Renderer from '2DRenderer.js'
+ import Triangle1 from 'Triangle1.js'
+ import Triangle2 from 'Triangle2.js'
 
  async function init() {
    // Create a canvas tag

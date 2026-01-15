@@ -1,4 +1,4 @@
-import Standard2DVertexObject from "/lib/Scene/Standard2DVertexObject.js"
+import Standard2DVertexObject from "Standard2DVertexObject.js"
 
  export default class Triangle2 extends Standard2DVertexObject {
    constructor(device, canvasFormat) {
@@ -9,7 +9,7 @@ import Standard2DVertexObject from "/lib/Scene/Standard2DVertexObject.js"
        0.5,  0,
        0, 0.5
      ]);
-     super(device, canvasFormat, vertices, '/lib/Shaders/standard2d.wgsl', 'line-strip');
+     super(device, canvasFormat, vertices, 'standard2d.wgsl', 'line-strip');
      this._vertices = vertices;
    }
  }
