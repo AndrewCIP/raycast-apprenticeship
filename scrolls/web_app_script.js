@@ -83,7 +83,7 @@ async function init() {
    code: vertCode + '\n' + fragCode,
  });
 
- renderPipeline = this.device.createRenderPipeline({
+ var renderPipeline = this._device.createRenderPipeline({
    label: "Render Pipeline",
    layout: "auto",
    vertex: {
