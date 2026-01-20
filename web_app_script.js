@@ -29,7 +29,7 @@ import Renderer from '/lib/Viz/2DRenderer.js'
    await renderer.appendSceneObject(new Circle2(renderer._device, renderer._canvasFormat, 0.3, 0.2, 0.3, 0.3));
    await renderer.appendSceneObject(new Circle2(renderer._device, renderer._canvasFormat, 0.2, 0, 0.2, 0.2));
    // Branches
-   await renderer.appendSceneObject(new Square2(renderer._device, renderer._canvasFormat, 0.2, -0.25, 0.3, 0.02));
+   await renderer.appendSceneObject(new Square2(renderer._device, renderer._canvasFormat, 0.2, -0.25, 0.25, 0.02));
 
    // Render
    renderer.render();
