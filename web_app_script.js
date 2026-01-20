@@ -20,7 +20,7 @@ import Renderer from '/lib/Viz/2DRenderer.js'
    await renderer.appendSceneObject(tri2);
 
    tri1.setPosition(2, 0.0);
-   tri1.updateTRansform();
+   tri1.updateTransform();
    tri2.setPosition(-2, 0.0);
    tri2.updateTransform();
 
