@@ -17,7 +17,7 @@ import Renderer from '/lib/Viz/2DRenderer.js'
    const renderer = new Renderer(canvasTag);
    await renderer.init();
 
-   const tri1 = new Triangle1(device, format, 0.5, 0.0, 0.5);
+   const tri1 = new Triangle1(renderer._device, renderer._canvasFormat, 0.5, 0.0, 0.5);
    await tri1.init();
    tri1.setColor(1.0, 0.0, 0.0); // red
 
