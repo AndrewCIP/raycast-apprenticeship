@@ -14,11 +14,11 @@ import Renderer from '/lib/Viz/2DRenderer.js'
 
    const tri1 = new Triangle1(renderer._device, renderer._canvasFormat);
    await tri1.init();
-   tri1.setPosition(2, 0.0);
+   tri1.setPosition(0.5, 0.0);
 
    const tri2 = new Triangle2(renderer._device, renderer._canvasFormat);
    await tri2.init();
-   tri2.setPosition(-2, 0.0);
+   tri2.setPosition(-0.5, 0.0);
   
    // Append objects
    await renderer.appendSceneObject(tri1);
