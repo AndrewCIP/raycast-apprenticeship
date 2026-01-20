@@ -1,5 +1,6 @@
 struct Transform {
   position : vec2f
+  _pad : vec2f
 }
 
 @group(0) @binding(0)
