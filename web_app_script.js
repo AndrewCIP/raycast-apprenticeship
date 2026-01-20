@@ -22,7 +22,7 @@ import Renderer from '/lib/Viz/2DRenderer.js'
    // Append objects
    // Ground
    await renderer.appendSceneObject(new Square1(renderer._device, renderer._canvasFormat, 0, -0.775, 0.5, 0.1, '/lib/Shaders/pot1.wgsl'));
-   await renderer.appendSceneObject(new Square1(renderer._device, renderer._canvasFormat, 0, -0.85, 0.3, 0.05, '/lib/Shaders/po2.wgsl'));
+   await renderer.appendSceneObject(new Square1(renderer._device, renderer._canvasFormat, 0, -0.85, 0.3, 0.05, '/lib/Shaders/pot2.wgsl'));
    await renderer.appendSceneObject(new Triangle1(renderer._device, renderer._canvasFormat, 0, -0.725, 0.35, 0.2));
    // Tree
    await renderer.appendSceneObject(new Square1(renderer._device, renderer._canvasFormat, 0.0, -0.25, 0.025, 0.75));
