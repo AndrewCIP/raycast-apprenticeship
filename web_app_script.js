@@ -22,13 +22,14 @@ import Renderer from '/lib/Viz/2DRenderer.js'
    await renderer.appendSceneObject(new Triangle2(renderer._device, renderer._canvasFormat, 0, -2, 1, 2));
    // Ground
    await renderer.appendSceneObject(new Square2(renderer._device, renderer._canvasFormat, 0, -0.775, 0.4, 0.1));
+   await renderer.appendSceneObject(new Square2(renderer._device, renderer._canvasFormat, 0, -0.825, 0.3, 0.05));
    // Trees
    await renderer.appendSceneObject(new Square2(renderer._device, renderer._canvasFormat, 0.3, -0.25, 0.025, 0.75));
    await renderer.appendSceneObject(new Circle2(renderer._device, renderer._canvasFormat, 0, -0.25, 0.2, 0.2));
    await renderer.appendSceneObject(new Circle2(renderer._device, renderer._canvasFormat, 0.3, 0.2, 0.3, 0.3));
    await renderer.appendSceneObject(new Circle2(renderer._device, renderer._canvasFormat, 0.2, 0, 0.2, 0.2));
    // Branches
-   await renderer.appendSceneObject(new Square2(renderer._device, renderer._canvasFormat, 0, -0.25, 0.1, 0.05));
+   await renderer.appendSceneObject(new Square2(renderer._device, renderer._canvasFormat, 0.5, -0.25, 0.15, 0.02));
 
    // Render
    renderer.render();
