@@ -21,9 +21,9 @@ import Renderer from '/lib/Viz/2DRenderer.js'
 
    // Append objects
    // Background Mountains
-   await renderer.appendSceneObject(new Triangle1(renderer._device, renderer._canvasFormat, -0.725, -1, 1.5, 3));
-   await renderer.appendSceneObject(new Triangle1(renderer._device, renderer._canvasFormat, -0.15, -1.5, 1.5, 3));
-   await renderer.appendSceneObject(new Triangle1(renderer._device, renderer._canvasFormat, 0.9, -1.25, 1.5, 3));
+   await renderer.appendSceneObject(new Triangle1(renderer._device, renderer._canvasFormat, -0.725, -1, 1.5, 3, '/lib/Shaders/canvas_shadow.wgsl'));
+   await renderer.appendSceneObject(new Triangle1(renderer._device, renderer._canvasFormat, -0.15, -1.5, 1.5, 3, '/lib/Shaders/canvas_shadow.wgsl'));
+   await renderer.appendSceneObject(new Triangle1(renderer._device, renderer._canvasFormat, 0.9, -1.25, 1.5, 3, '/lib/Shaders/canvas_shadow.wgsl'));
    // Ground
    await renderer.appendSceneObject(new Square1(renderer._device, renderer._canvasFormat, 0, -0.775, 0.5, 0.1, '/lib/Shaders/pot1.wgsl'));
    await renderer.appendSceneObject(new Square1(renderer._device, renderer._canvasFormat, 0, -0.85, 0.3, 0.05, '/lib/Shaders/pot2.wgsl'));
