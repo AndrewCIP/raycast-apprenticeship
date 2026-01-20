@@ -2,6 +2,7 @@ import Renderer from '/lib/Viz/2DRenderer.js'
  import Triangle1 from '/lib/Scene/Triangle1.js'
  import Triangle2 from '/lib/Scene/Triangle2.js'
  import Square1 from '/lib/Scene/Square1.js'
+ import Square2 from '/lib/Scene/Square2.js'
  import Circle1 from '/lib/Scene/Circle1.js'
  import Circle2 from '/lib/Scene/Circle2.js'
  import Star1 from '/lib/Scene/Star1.js'
@@ -19,7 +20,7 @@ import Renderer from '/lib/Viz/2DRenderer.js'
    // Append objects
    await renderer.appendSceneObject(new Triangle1(renderer._device, renderer._canvasFormat, -0.2, 0.2, 0.5));
    await renderer.appendSceneObject(new Triangle2(renderer._device, renderer._canvasFormat, 0, 0, 1));
-   await renderer.appendSceneObject(new Circle2(renderer._device, renderer._canvasFormat, 0, 0, 1));
+   await renderer.appendSceneObject(new Square2(renderer._device, renderer._canvasFormat, 0, 0, 1));
 
    // Render
    renderer.render();
