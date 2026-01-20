@@ -46,7 +46,7 @@ import Renderer from '/lib/Viz/2DRenderer.js'
    await renderer.appendSceneObject(new Hexagon1(renderer._device, renderer._canvasFormat, 0.2, 0.15, 0.03, 0.03));
    await renderer.appendSceneObject(new Hexagon1(renderer._device, renderer._canvasFormat, 0.175, -0.35, 0.05, 0.05));
    await renderer.appendSceneObject(new Hexagon1(renderer._device, renderer._canvasFormat, 0.125, -0.4, 0.05, 0.05));
-   await renderer.appendSceneObject(new Hexagon1(renderer._device, renderer._canvasFormat, -0.15, -0.2, 0.03, 0.03));
+   await renderer.appendSceneObject(new Hexagon1(renderer._device, renderer._canvasFormat, -0.15, -0.05, 0.03, 0.03));
 
    // Render
    renderer.render();
