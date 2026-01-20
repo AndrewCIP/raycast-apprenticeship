@@ -19,8 +19,8 @@ import Renderer from '/lib/Viz/2DRenderer.js'
    await renderer.appendSceneObject(tri1);
    await renderer.appendSceneObject(tri2);
 
-   tri1.setPosition(5, 0.0);
-   tri2.setPosition(10, 0.0);
+   tri1.setPosition(2, 0.0);
+   tri2.setPosition(-2, 0.0);
 
    // Render
    renderer.render();
