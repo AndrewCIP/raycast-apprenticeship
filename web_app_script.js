@@ -17,10 +17,14 @@ import Renderer from '/lib/Viz/2DRenderer.js'
    const renderer = new Renderer(canvasTag);
    await renderer.init();
 
+   const tri1 = new Triangle1(device, format, 0.5, 0.0, 0.5);
+   await tri1.init();
+   tri1.setColor(1.0, 0.0, 0.0); // red
+
    // Append objects
-   await renderer.appendSceneObject(new Triangle1(renderer._device, renderer._canvasFormat, -0.2, 0.2, 0.5));
-   await renderer.appendSceneObject(new Triangle2(renderer._device, renderer._canvasFormat, 0, 0, 1));
-   await renderer.appendSceneObject(new Square2(renderer._device, renderer._canvasFormat, 0, 0, 1));
+   await renderer.appendSceneObject(tri1);
+   //await renderer.appendSceneObject(new Triangle2(renderer._device, renderer._canvasFormat, 0, 0, 1));
+   //await renderer.appendSceneObject(new Square2(renderer._device, renderer._canvasFormat, 0, 0, 1));
 
    // Render
    renderer.render();
