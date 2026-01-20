@@ -12,8 +12,8 @@ import Renderer from '/lib/Viz/2DRenderer.js'
    const renderer = new Renderer(canvasTag);
    await renderer.init();
 
-   const tri1 = new Triangle1(renderer._device, renderer._canvasFormat);
-   const tri2 = new Triangle1(renderer._device, renderer._canvasFormat);
+   const tri1 = new Triangle2(renderer._device, renderer._canvasFormat);
+   const tri2 = new Triangle2(renderer._device, renderer._canvasFormat);
   
    // Append objects
    await renderer.appendSceneObject(tri1);
