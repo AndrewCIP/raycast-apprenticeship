@@ -20,8 +20,6 @@ import Renderer from '/lib/Viz/2DRenderer.js'
    await renderer.init();
 
    // Append objects
-   await renderer.appendSceneObject(new Triangle1(renderer._device, renderer._canvasFormat, -0.7, -0.65, 0.5, 2));
-   await renderer.appendSceneObject(new Triangle2(renderer._device, renderer._canvasFormat, 0, -2, 1, 2));
    // Ground
    await renderer.appendSceneObject(new Square2(renderer._device, renderer._canvasFormat, 0, -0.775, 0.5, 0.1));
    await renderer.appendSceneObject(new Square2(renderer._device, renderer._canvasFormat, 0, -0.85, 0.3, 0.05));
