@@ -24,7 +24,7 @@ import Renderer from '/lib/Viz/2DRenderer.js'
    await renderer.appendSceneObject(new Square2(renderer._device, renderer._canvasFormat, 0, -0.775, 2.5, 0.2));
    // Trees
    await renderer.appendSceneObject(new Square2(renderer._device, renderer._canvasFormat, 0.3, -0.25, 0.025, 0.75));
-   await renderer.appendSceneObject(new Circle2(renderer._device, renderer._canvasFormat, 0.3, -0.25, 0.25, 0.25));
+   await renderer.appendSceneObject(new Circle2(renderer._device, renderer._canvasFormat, 0.0, -0.25, 0.25, 0.25));
 
    // Render
    renderer.render();
