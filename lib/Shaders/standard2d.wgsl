@@ -1,13 +1,13 @@
-struct Uniforms {
-  offset : vec2f
+struct Transform {
+  position : vec2f
 }
 
 @group(0) @binding(0)
-var<uniform> uniforms : Uniforms;
+var<uniform> transform : Transform;
 
 @vertex // this compute the scene coordinate of each input vertex
  fn vertexMain(@location(0) pos: vec2f) -> @builtin(position) vec4f {
-   let translation = pos + uniforms.offset;
+   let translation = pos + transform.position;
    return vec4f(translation, 0, 1); // (translation, Z, W) = (X, Y, Z, W)
  }
 
