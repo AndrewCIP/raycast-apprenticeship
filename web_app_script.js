@@ -6,7 +6,7 @@ import Renderer from '/lib/Viz/2DRenderer.js'
  import Circle1 from '/lib/Scene/Circle1.js'
  import Circle2 from '/lib/Scene/Circle2.js'
  import Star1 from '/lib/Scene/Star1.js'
- import Star2 from '/lib/Scene/Star2.js'
+ import Hexagon1 from '/lib/Scene/Hexagon1.js'
 
  async function init() {
    // Create a canvas tag
@@ -39,7 +39,7 @@ import Renderer from '/lib/Viz/2DRenderer.js'
    await renderer.appendSceneObject(new Square2(renderer._device, renderer._canvasFormat, 0.05, -0.4, 0.1, 0.02));
    await renderer.appendSceneObject(new Square2(renderer._device, renderer._canvasFormat, 0.025, -0.15, 0.05, 0.02));
    // Secondary
-   await renderer.appendSceneObject(new Star2(renderer._device, renderer._canvasFormat, 0.5, 0.5, 1, 1));
+   await renderer.appendSceneObject(new Hexagon1(renderer._device, renderer._canvasFormat, 0.5, 0.5, 1, 1));
 
    // Render
    renderer.render();
