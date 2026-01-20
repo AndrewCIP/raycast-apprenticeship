@@ -5,5 +5,5 @@
 
  @fragment // this compute the color of each pixel
  fn fragmentMain() -> @location(0) vec4f {
-   return vec4f(139.0/255.0, 69.0/255.0, 19.0/255.0, 1.0); // (R, G, B, A)
+   return vec4f(160.0/255.0, 69.0/255.0, 19.0/255.0, 1.0); // (R, G, B, A)
  }
