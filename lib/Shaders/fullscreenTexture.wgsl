@@ -1,7 +1,7 @@
-  @group(0) @binding(0) var inTexture: texture_2d<f32>;
-  @group(0) @binding(1) var inSampler: sampler;
+ @group(0) @binding(0) var inTexture: texture_2d<f32>;
+ @group(0) @binding(1) var inSampler: sampler;
 
-  struct VertexOutput {
+ struct VertexOutput {
    @builtin(position) pos: vec4f,
    @location(0) texCoords: vec2f
  };
@@ -22,7 +22,7 @@
    return out;
  }
 
-@fragment
+ @fragment
  fn fragmentMain(@location(0) texCoords: vec2f) -> @location(0) vec4f {
    return textureSample(inTexture, inSampler, texCoords);
  }
