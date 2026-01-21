@@ -23,8 +23,9 @@ import Standard2DFullScreenObject from "/lib/Scene/Standard2DFullScreenObject.js
    // Append objects
 
    // Add Image Background
-   await renderer.appendSceneObject(new Standard2DFullScreenObject(renderer._device, renderer._canvasFormat, "/assets/kirby_background.jpg"));
+   await renderer.appendFilterObject(new Standard2DFullScreenObject(renderer._device, renderer._canvasFormat, "/assets/kirby_background.jpg"));
 
+   /*
    // Background Mountains
    await renderer.appendSceneObject(new Circle1(renderer._device, renderer._canvasFormat, -0.6, 0.5, 0.5, 1, '/lib/Shaders/red.wgsl'));
    await renderer.appendSceneObject(new Triangle1(renderer._device, renderer._canvasFormat, -0.725, -1, 1.5, 3, '/lib/Shaders/canvas_shadow.wgsl'));
@@ -62,6 +63,7 @@ import Standard2DFullScreenObject from "/lib/Scene/Standard2DFullScreenObject.js
    await renderer.appendSceneObject(new Hexagon1(renderer._device, renderer._canvasFormat, -0.15, -0.05, 0.03, 0.03));
    await renderer.appendSceneObject(new Hexagon1(renderer._device, renderer._canvasFormat, 0.075, -0.1, 0.03, 0.03));
    await renderer.appendSceneObject(new Hexagon1(renderer._device, renderer._canvasFormat, 0.125, -0.15, 0.03, 0.03)); 
+*/
 
    // Render
    renderer.render();
