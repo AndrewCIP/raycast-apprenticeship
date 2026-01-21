@@ -23,7 +23,7 @@ import Standard2DFullScreenObject from "/lib/Scene/Standard2DFullScreenObject.js
    // Append objects
 
    // Add Image Background
-   //await renderer.appendSceneObject(new Standard2DFullScreenObject(renderer._device, renderer._canvasFormat, "/assets/kirby_background.jpg"));
+   await renderer.appendSceneObject(new Standard2DFullScreenObject(renderer._device, renderer._canvasFormat, "/assets/kirby_background.jpg"));
 
    // Background Mountains
    await renderer.appendSceneObject(new Circle1(renderer._device, renderer._canvasFormat, -0.6, 0.5, 0.5, 1, '/lib/Shaders/red.wgsl'));
