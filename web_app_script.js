@@ -1,4 +1,4 @@
-import Renderer from '/lib/Viz/FilteredRenderer.js'
+import Renderer from '/lib/Viz/2DRenderer.js'
 import Standard2DFullScreenObject from "/lib/Scene/Standard2DFullScreenObject.js";
  import Triangle1 from '/lib/Scene/Triangle1.js'
  import Triangle2 from '/lib/Scene/Triangle2.js'
