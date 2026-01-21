@@ -1,4 +1,4 @@
-import Renderer from '/lib/Viz/2DRenderer.js'
+import Renderer from '/lib/Viz/FilteredRenderer.js'
  import Triangle1 from '/lib/Scene/Triangle1.js'
  import Triangle2 from '/lib/Scene/Triangle2.js'
  import Square1 from '/lib/Scene/Square1.js'
