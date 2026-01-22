@@ -23,6 +23,13 @@ import Standard2DFullScreenObject from "/lib/Scene/Standard2DFullScreenObject.js
    const renderer = new Renderer(canvasTag);
    await renderer.init();
 
+// Example vertices for a single triangle (x, y per vertex)
+const vertices = new Float32Array([
+   0.0,  0.5,   // top
+  -0.5, -0.5,   // bottom left
+   0.5, -0.5    // bottom right
+]);
+
   let applyRotorToRotor = (dr, r) => {
    // r = cS + s exey
    // dr = ccS + ss exey
@@ -93,7 +100,7 @@ import Standard2DFullScreenObject from "/lib/Scene/Standard2DFullScreenObject.js
    pose[0] = newrotor[0];
    pose[1] = newrotor[1];
  }, 100); // call every 100 ms
- 
+
    return renderer;
  }
 
