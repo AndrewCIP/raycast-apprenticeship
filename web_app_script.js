@@ -85,16 +85,17 @@ import Standard2DFullScreenObject from "/lib/Scene/Standard2DFullScreenObject.js
 
    // Render
    renderer.render();
-   return renderer;
- }
 
- setInterval(() => { 
+   setInterval(() => { 
    renderer.render();
    // update pose
    let newrotor = applyRotorToRotor(dr, [pose[0], pose[1]]);
    pose[0] = newrotor[0];
    pose[1] = newrotor[1];
  }, 100); // call every 100 ms
+ 
+   return renderer;
+ }
 
  init().then( ret => {
    console.log(ret);
