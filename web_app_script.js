@@ -1,7 +1,7 @@
 import Renderer from '/lib/Viz/FilteredRenderer.js'
 import Standard2DFullScreenObject from "/lib/Scene/Standard2DFullScreenObject.js";
  import ImageFilterObject from "/lib/Scene/ImageFilterObject.js";
- import ImageNosifyFilterObject from "/lib/Scene/ImageNosifyFilterObject.js";
+ //import ImageNosifyFilterObject from "/lib/Scene/ImageNosifyFilterObject.js";
  import Triangle1 from '/lib/Scene/Triangle1.js'
  import Triangle2 from '/lib/Scene/Triangle2.js'
  import Square1 from '/lib/Scene/Square1.js'
