@@ -37,18 +37,18 @@ const vertices = new Float32Array([
    return [dr[0] * r[0] - dr[1] * r[1], dr[0] * r[1] + dr[1] * r[0]];
  };
 
-  var pose = [1, 0, 0, 0, 1, 1]; // rotor, translator, scales
-  pose = new Float32Array(pose);
-  await renderer.appendSceneObject(new Standard2DGAPosedVertexObject(renderer._device, renderer._canvasFormat, vertices, pose, "/lib/Shaders/ga_pose.wgsl", "triangle-list"));
-  let angle = Math.PI / 100 / 2;
-  let dr = [Math.cos(angle), -Math.sin(angle)]; // a delta rotor
-
    // Append objects
 
    // Add Image Background
    await renderer.appendSceneObject(new Standard2DFullScreenObject(renderer._device, renderer._canvasFormat, "/assets/kirby_background.jpg"));
    await renderer.appendFilterObject(new ImageFilterObject(renderer._device, renderer._canvasFormat, "/lib/Shaders/8_bit_filter.wgsl"));
    await renderer.appendFilterObject(new ImageNosifyFilterObject(renderer._device, renderer._canvasFormat, "/lib/Shaders/nosify.wgsl"));
+
+     var pose = [1, 0, 0, 0, 1, 1]; // rotor, translator, scales
+  pose = new Float32Array(pose);
+  await renderer.appendSceneObject(new Standard2DGAPosedVertexObject(renderer._device, renderer._canvasFormat, vertices, pose, "/lib/Shaders/ga_pose.wgsl", "triangle-list"));
+  let angle = Math.PI / 100 / 2;
+  let dr = [Math.cos(angle), -Math.sin(angle)]; // a delta rotor
 
    /*
    // Background Mountains
