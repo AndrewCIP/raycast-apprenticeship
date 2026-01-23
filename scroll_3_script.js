@@ -1,4 +1,4 @@
-import Renderer from '/lib/Viz/FilteredRenderer.js'
+import FilteredRenderer from '/lib/Viz/FilteredRenderer.js'
 import Standard2DFullScreenObject from "/lib/Scene/Standard2DFullScreenObject.js";
  import ImageFilterObject from "/lib/Scene/ImageFilterObject.js";
  import ImageNosifyFilterObject from "/lib/Scene/ImageNosifyFilterObject.js";
@@ -11,7 +11,7 @@ import Standard2DFullScreenObject from "/lib/Scene/Standard2DFullScreenObject.js
    document.body.appendChild(canvasTag);
 
    // Create a simple renderer
-   const renderer = new Renderer(canvasTag);
+   const renderer = new FilteredRenderer(canvasTag);
    await renderer.init();
 
 // Create a triangle geometry
