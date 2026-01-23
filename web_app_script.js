@@ -74,7 +74,7 @@ const vertices = new Float32Array([
   await renderer.appendSceneObject(new Standard2DGAPosedVertexObject(renderer._device, renderer._canvasFormat, vertices, pose, "/lib/Shaders/projective_geometric_algebra.wgsl", "triangle-list"));
    let angle = Math.PI / 100;
  // rotate about center
- let center = [0, 0];
+ let center = [0, 0.5];
  let dr = normalizeMotor([Math.cos(angle / 2), -Math.sin(angle / 2), -center[0] * Math.sin(angle / 2), -center[1] * Math.sin(angle / 2)]);
  let dt = normalizeMotor([1, 0, 0.01 / 2, 0 / 2]);
  let dm = normalizeMotor(geometricProduct(dt, dr));
