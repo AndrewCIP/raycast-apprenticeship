@@ -23,11 +23,12 @@ import Standard2DFullScreenObject from "/lib/Scene/Standard2DFullScreenObject.js
    const renderer = new Renderer(canvasTag);
    await renderer.init();
 
-// Example vertices for a single triangle (x, y per vertex)
-const vertices = new Float32Array([
-   0.0,  0.5,   // top
-  -0.5, -0.5,   // bottom left
-   0.5, -0.5    // bottom right
+// Create a triangle geometry
+var vertices = new Float32Array([
+  // x, y,
+  0, 0.25, 
+  -0.25, 0,
+  0.25,  0,
 ]);
 
  let geometricProduct = (a, b) => {
@@ -59,6 +60,8 @@ const vertices = new Float32Array([
    return [m[0] / mnorm, m[1] / mnorm, m[2] / mnorm, m[3] / mnorm];
  };
 
+console.log(LinearInterpolate(0, 10, 0.5));
+
    // Append objects
 
    // Add Image Background
@@ -66,11 +69,9 @@ const vertices = new Float32Array([
    await renderer.appendFilterObject(new ImageFilterObject(renderer._device, renderer._canvasFormat, "/lib/Shaders/8_bit_filter.wgsl"));
    await renderer.appendFilterObject(new ImageNosifyFilterObject(renderer._device, renderer._canvasFormat, "/lib/Shaders/nosify.wgsl"));
 
-   var pose = new Float32Array([
-   1, 0, 0, 0,  // motor
-   1, 1         // scale
- ]);
-  pose = new Float32Array(pose);
+   let pose0 = [0, -0.75];
+let pose1 = [0, 0.5];
+var pose = new Float32Array([1, 0, pose0[0], pose0[1], 1, 1, 0.25, 0.25]);
   await renderer.appendSceneObject(new Standard2DGAPosedVertexObject(renderer._device, renderer._canvasFormat, vertices, pose, "/lib/Shaders/projective_geometric_algebra.wgsl", "triangle-list"));
    let angle = Math.PI / 100;
  // rotate about center
@@ -78,6 +79,11 @@ const vertices = new Float32Array([
  let dr = normalizeMotor([Math.cos(angle / 2), -Math.sin(angle / 2), -center[0] * Math.sin(angle / 2), -center[1] * Math.sin(angle / 2)]);
  let dt = normalizeMotor([1, 0, 0.01 / 2, 0 / 2]);
  let dm = normalizeMotor(geometricProduct(dt, dr));
+
+ let timerMs = 100;
+let steps = 100;      // how many samples for a full move
+let i = 0;
+let dir = 1;
 
    /*
    // Background Mountains
@@ -122,18 +128,25 @@ const vertices = new Float32Array([
    // Render
    renderer.render();
 
-   setInterval(() => { 
-   renderer.render();
-   // update pose
-   let newmotor = normalizeMotor(geometricProduct(dm, [pose[0], pose[1], pose[2], pose[3]]));
-   pose[0] = newmotor[0];
-   pose[1] = newmotor[1];
-   pose[2] = newmotor[2];
-   pose[3] = newmotor[3];
- }, 100); // call every 100 ms
+   setInterval(() => {
+  let t = i / steps;  // 0..1
+  renderer.render();
+
+  // LERP translation
+  pose[2] = LinearInterpolate(pose0[0], pose1[0], t);
+  pose[3] = LinearInterpolate(pose0[1], pose1[1], t);
+
+  i += dir;
+  if (i >= steps) dir = -1;
+  if (i <= 0) dir = 1;
+}, timerMs);
 
    return renderer;
  }
+
+function LinearInterpolate(A, B, t) {
+  return A * (1 - t) + B * t;
+}
 
  init().then( ret => {
    console.log(ret);
