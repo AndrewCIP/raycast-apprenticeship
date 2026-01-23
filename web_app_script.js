@@ -69,9 +69,9 @@ console.log(LinearInterpolate(0, 10, 0.5));
    await renderer.appendFilterObject(new ImageFilterObject(renderer._device, renderer._canvasFormat, "/lib/Shaders/8_bit_filter.wgsl"));
    await renderer.appendFilterObject(new ImageNosifyFilterObject(renderer._device, renderer._canvasFormat, "/lib/Shaders/nosify.wgsl"));
 
-   let pose0 = [0, -0.75];
-let pose1 = [0, 0.5];
-var pose = new Float32Array([1, 0, pose0[0], pose0[1], 1, 1, 0.25, 0.25]);
+   let pose0 = [1, 0];   // cos(0), -sin(0)
+let pose1 = [0, -1];  // cos(pi/2), -sin(pi/2)
+var pose = new Float32Array([pose0[0], pose0[1], 0, 0, 1, 1, 0.25, 0.25]);
   await renderer.appendSceneObject(new Standard2DGAPosedVertexObject(renderer._device, renderer._canvasFormat, vertices, pose, "/lib/Shaders/projective_geometric_algebra.wgsl", "triangle-list"));
    let angle = Math.PI / 100;
  // rotate about center
@@ -84,6 +84,12 @@ var pose = new Float32Array([1, 0, pose0[0], pose0[1], 1, 1, 0.25, 0.25]);
 let steps = 100;      // how many samples for a full move
 let i = 0;
 let dir = 1;
+
+let sAngle = Math.acos(pose0[0]); // angle from cos
+let eAngle = Math.acos(pose1[0]);
+
+// Optional: force a consistent direction if you want the "long way" vs "short way"
+if (eAngle < sAngle) eAngle += Math.PI;
 
    /*
    // Background Mountains
@@ -129,12 +135,12 @@ let dir = 1;
    renderer.render();
 
    setInterval(() => {
-  let t = i / steps;  // 0..1
+  let t = i / steps;
   renderer.render();
 
-  // LERP translation
-  pose[2] = LinearInterpolate(pose0[0], pose1[0], t);
-  pose[3] = LinearInterpolate(pose0[1], pose1[1], t);
+  let angle = LinearInterpolate(sAngle, eAngle, t);
+  pose[0] = Math.cos(angle);
+  pose[1] = -Math.sin(angle);
 
   i += dir;
   if (i >= steps) dir = -1;
