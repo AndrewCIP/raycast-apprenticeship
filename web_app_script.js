@@ -60,6 +60,11 @@ var vertices = new Float32Array([
    return [m[0] / mnorm, m[1] / mnorm, m[2] / mnorm, m[3] / mnorm];
  };
 
+let easeInEaseOut = (t) => {
+  if (t > 0.5) return t * (4 - 2 * t) -1;
+  else return 2 * t * t;
+}
+
 console.log(LinearInterpolate(0, 10, 0.5));
 
    // Append objects
@@ -131,14 +136,15 @@ let dir = 1;
 
    setInterval(() => {
   let t = i / steps;
+  let tNew = easeInEaseOut(t);
   renderer.render();
 
   // LERP motor coefficients
   let m = [
-    LinearInterpolate(pose0[0], pose1[0], t),
-    LinearInterpolate(pose0[1], pose1[1], t),
-    LinearInterpolate(pose0[2], pose1[2], t),
-    LinearInterpolate(pose0[3], pose1[3], t),
+    LinearInterpolate(pose0[0], pose1[0], tNew),
+    LinearInterpolate(pose0[1], pose1[1], tNew),
+    LinearInterpolate(pose0[2], pose1[2], tNew),
+    LinearInterpolate(pose0[3], pose1[3], tNew),
   ];
   m = normalizeMotor(m);
 
