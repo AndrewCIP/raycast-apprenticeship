@@ -44,7 +44,12 @@ const vertices = new Float32Array([
    await renderer.appendFilterObject(new ImageFilterObject(renderer._device, renderer._canvasFormat, "/lib/Shaders/8_bit_filter.wgsl"));
    await renderer.appendFilterObject(new ImageNosifyFilterObject(renderer._device, renderer._canvasFormat, "/lib/Shaders/nosify.wgsl"));
 
-     var pose = [1, 0, 0, 0, 1, 1]; // rotor, translator, scales
+  var pose = new Float32Array([
+   1, 0,     // rotor
+   0, 0,     // translator
+   1, 1,     // scale
+   0, 0.5    // r_center
+ ]);
   pose = new Float32Array(pose);
   await renderer.appendSceneObject(new Standard2DGAPosedVertexObject(renderer._device, renderer._canvasFormat, vertices, pose, "/lib/Shaders/ga_pose.wgsl", "triangle-list"));
   let angle = Math.PI / 100 / 2;
