@@ -30,11 +30,33 @@ const vertices = new Float32Array([
    0.5, -0.5    // bottom right
 ]);
 
-  let applyRotorToRotor = (dr, r) => {
-   // r = cS + s exey
-   // dr = ccS + ss exey
-   // dr r = (c * cc - s * ss)S + (cc * s + ss * s) e01
-   return [dr[0] * r[0] - dr[1] * r[1], dr[0] * r[1] + dr[1] * r[0]];
+ let geometricProduct = (a, b) => {
+   // ref: https://geometricalgebratutorial.com/pga/
+   // eoo = 0, e00 = 1 e11 = 1
+   // s + e01 + eo0 + eo1
+   // ss   = s   , se01   = e01  , seo0            = eo0  , seo1          = eo1
+   // e01s = e01 , e01e01 = -s   , e01eo0 = e10e0o = -eo1 , e01eo1 = -e0o = eo0
+   // eo0s = eo0 , eo0e01 = eo1  , eo0eo0          = 0    , eo0eo1        = 0
+   // e01s = e01 , eo1e01 = -eo0 , eo1eo0          = 0    , eo1eo1        = 0
+   return [
+     a[0] * b[0] - a[1] * b[1] , // scalar
+     a[0] * b[1] + a[1] * b[0] , // e01
+     a[0] * b[2] + a[1] * b[3] + a[2] * b[0] - a[3] * b[1], // eo0
+     a[0] * b[3] - a[1] * b[2] + a[2] * b[1] + a[3] * b[0]  // eo1
+   ];
+ };
+ let reverse = (a) => {
+   return [ a[0], -a[1], -a[2], -a[3] ];
+ };
+ let motorNorm =  (m) => {
+   return Math.sqrt(m[0] * m[0] + m[1] * m[1] + m[2] * m[2] + m[3] * m[3]);
+ };
+ let normalizeMotor = (m) => {
+   let mnorm = motorNorm(m);
+   if (mnorm == 0.0) {
+     return [1, 0, 0, 0];
+   }
+   return [m[0] / mnorm, m[1] / mnorm, m[2] / mnorm, m[3] / mnorm];
  };
 
    // Append objects
@@ -44,16 +66,18 @@ const vertices = new Float32Array([
    await renderer.appendFilterObject(new ImageFilterObject(renderer._device, renderer._canvasFormat, "/lib/Shaders/8_bit_filter.wgsl"));
    await renderer.appendFilterObject(new ImageNosifyFilterObject(renderer._device, renderer._canvasFormat, "/lib/Shaders/nosify.wgsl"));
 
-  var pose = new Float32Array([
-   1, 0,     // rotor
-   0, 0,     // translator
-   1, 1,     // scale
-   0, 0.5    // r_center
+   var pose = new Float32Array([
+   1, 0, 0, 0,  // motor
+   1, 1         // scale
  ]);
   pose = new Float32Array(pose);
-  await renderer.appendSceneObject(new Standard2DGAPosedVertexObject(renderer._device, renderer._canvasFormat, vertices, pose, "/lib/Shaders/ga_pose.wgsl", "triangle-list"));
-  let angle = Math.PI / 100 / 2;
-  let dr = [Math.cos(angle), -Math.sin(angle)]; // a delta rotor
+  await renderer.appendSceneObject(new Standard2DGAPosedVertexObject(renderer._device, renderer._canvasFormat, vertices, pose, "/lib/Shaders/projective_geometric_algebra.wgsl", "triangle-list"));
+   let angle = Math.PI / 100;
+ // rotate about center
+ let center = [0, 0];
+ let dr = normalizeMotor([Math.cos(angle / 2), -Math.sin(angle / 2), -center[0] * Math.sin(angle / 2), -center[1] * Math.sin(angle / 2)]);
+ let dt = normalizeMotor([1, 0, 0.01 / 2, 0 / 2]);
+ let dm = normalizeMotor(geometricProduct(dt, dr));
 
    /*
    // Background Mountains
@@ -101,9 +125,11 @@ const vertices = new Float32Array([
    setInterval(() => { 
    renderer.render();
    // update pose
-   let newrotor = applyRotorToRotor(dr, [pose[0], pose[1]]);
-   pose[0] = newrotor[0];
-   pose[1] = newrotor[1];
+   let newmotor = normalizeMotor(geometricProduct(dm, [pose[0], pose[1], pose[2], pose[3]]));
+   pose[0] = newmotor[0];
+   pose[1] = newmotor[1];
+   pose[2] = newmotor[2];
+   pose[3] = newmotor[3];
  }, 100); // call every 100 ms
 
    return renderer;
