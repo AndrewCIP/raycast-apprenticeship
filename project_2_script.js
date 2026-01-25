@@ -4,6 +4,9 @@ import Standard2DFullScreenObject from "/lib/Scene/Standard2DFullScreenObject.js
  import ImageNosifyFilterObject from "/lib/Scene/ImageNosifyFilterObject.js";
  import Standard2DGAPosedVertexObject from '/lib/Scene/Standard2DGAPosedVertexObject.js';
 
+// 6 Point Requirements (1/6)
+// [x] A (space-like) background using an image texture.
+
  async function init() {
    // Create a canvas tag
    const canvasTag = document.createElement('canvas');
