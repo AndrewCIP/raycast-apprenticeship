@@ -65,7 +65,7 @@ console.log(LinearInterpolate(0, 10, 0.5));
 
    // Add Image Background
    await renderer.appendSceneObject(new Standard2DFullScreenObject(renderer._device, renderer._canvasFormat, "/assets/space_background.jpg"));
-   await renderer.appendFilterObject(new ImageFilterObject(renderer._device, renderer._canvasFormat, "/lib/Shaders/8_bit_filter.wgsl"));
+   await renderer.appendFilterObject(new ImageFilterObject(renderer._device, renderer._canvasFormat, "/lib/Shaders/grayscale.wgsl"));
    await renderer.appendFilterObject(new ImageNosifyFilterObject(renderer._device, renderer._canvasFormat, "/lib/Shaders/nosify.wgsl"));
 
    let pose0 = normalizeMotor([1, 0, -0.2, -0.25]);
