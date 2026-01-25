@@ -5,7 +5,7 @@ var inputTexture: texture_2d<f32>;
 var outputTexture: texture_storage_2d<rgba8unorm, write>;
 
 @compute @workgroup_size(8, 8)
-fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
+fn computeMain(@builtin(global_invocation_id) gid: vec3<u32>) {
     let dims = textureDimensions(inputTexture, 0);
 
     // Prevent out-of-bounds writes
