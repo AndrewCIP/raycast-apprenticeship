@@ -44,7 +44,7 @@ async function init() {
   const renderer = new Renderer(canvasTag);
   await renderer.init();
 
-  const planet = new PlanetObject(renderer._device, renderer._canvasFormat, 0.03, 48);
+  const planet = new PlanetObject(renderer._device, renderer._canvasFormat, 0.02, 48);
 
   // initial motor
   let pose0 = normalizeMotor([1, 0, -0.3, 0]);
