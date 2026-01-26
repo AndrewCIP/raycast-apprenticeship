@@ -6,12 +6,14 @@ import Standard2DGAPosedVertexObject from '/lib/Scene/Standard2DGAPosedVertexObj
 import PlanetObject from '/lib/Scene/PlanetObject.js';
 import OrbitLine from '/lib/Scene/OrbitLine.js';
 
-// Requirements (4/6)
+// Requirements (5/6)
 // [x] A space-like background using an image texture.
 // [x] Apply grayscale filter.
 // [x] At least one orbit is elliptical.
 // [x] Use simple shapes and colors to present celestial bodies and orbits.
 // [] A complete solar system animation (sun and the eight planets).
+// [] At least one planet orbits the sun.
+// [x] At least one moon orbits around a planet.
 
 
 /* --------------------------------------------------
@@ -150,6 +152,12 @@ async function init() {
   /* --------------------------------------------------
      Create Multiple Orbits
   -------------------------------------------------- */
+
+  // Perfect circle
+  await createOrbitingObject({
+    radius: 0.00,
+    speed: 0.00
+  });
 
   // Perfect circle
   await createOrbitingObject({
