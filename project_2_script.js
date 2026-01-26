@@ -161,7 +161,8 @@ async function init() {
   // Sun
   await createOrbitingObject({
     radius: 0.00,
-    speed: 0.00
+    speed: 0.00,
+    size: 0.05
   });
 
   // Mercury
