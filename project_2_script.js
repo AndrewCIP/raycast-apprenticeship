@@ -111,14 +111,14 @@ async function init() {
 
   // Perfect circle
   await createOrbitingObject({
-    radius: 0.45,
+    radius: 0.40,
     speed: 0.02
   });
 
   // Smaller counter-rotating circle
   await createOrbitingObject({
     radius: 0.25,
-    speed: -0.03
+    speed: 0.035
   });
 
   // Elliptical orbit
