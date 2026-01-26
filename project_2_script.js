@@ -3,7 +3,7 @@ import Standard2DFullScreenObject from "/lib/Scene/Standard2DFullScreenObject.js
 import ImageFilterObject from "/lib/Scene/ImageFilterObject.js";
 import ImageNosifyFilterObject from "/lib/Scene/ImageNosifyFilterObject.js";
 import Standard2DGAPosedVertexObject from '/lib/Scene/Standard2DGAPosedVertexObject.js';
-import PlanetObject from 'lib/Scene/PlanetObject.js';
+import PlanetObject from '/lib/Scene/PlanetObject.js';
 
 // Requirements (3/6)
 // [x] A space-like background using an image texture.
