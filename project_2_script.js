@@ -3,6 +3,13 @@ import Standard2DFullScreenObject from "/lib/Scene/Standard2DFullScreenObject.js
 import ImageFilterObject from "/lib/Scene/ImageFilterObject.js";
 import ImageNosifyFilterObject from "/lib/Scene/ImageNosifyFilterObject.js";
 import Standard2DGAPosedVertexObject from '/lib/Scene/Standard2DGAPosedVertexObject.js';
+import PlanetObject from 'lib/Scene/PlanetObject.js';
+
+// Requirements (3/6)
+// [x] A space-like background using an image texture.
+// [x] Apply grayscale filter.
+// [x] At least one orbit is elliptical.
+
 
 /* --------------------------------------------------
    Utility Functions (unchanged GA helpers)
@@ -31,6 +38,18 @@ async function init() {
   // Renderer
   const renderer = new Renderer(canvasTag);
   await renderer.init();
+
+  const planet = new PlanetObject(renderer._device, renderer._canvasFormat, 0.15, 48);
+
+  // initial motor
+  let pose0 = normalizeMotor([1, 0, -0.3, 0]);
+  let pose1 = normalizeMotor([1, 0,  0.3, 0]);
+
+  let pose = new Float32Array([
+    pose0[0], pose0[1],
+    pose0[2], pose0[3],
+    1, 1
+  ]);
 
   // Geometry (triangle)
   const vertices = new Float32Array([
@@ -88,7 +107,7 @@ async function init() {
       new Standard2DGAPosedVertexObject(
         renderer._device,
         renderer._canvasFormat,
-        vertices,
+        planet._vertices,
         pose,
         "/lib/Shaders/projective_geometric_algebra.wgsl",
         "triangle-list"
