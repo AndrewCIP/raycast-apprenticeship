@@ -6,11 +6,12 @@ import Standard2DGAPosedVertexObject from '/lib/Scene/Standard2DGAPosedVertexObj
 import PlanetObject from '/lib/Scene/PlanetObject.js';
 import OrbitLine from '/lib/Scene/OrbitLine.js';
 
-// Requirements (3/6)
+// Requirements (4/6)
 // [x] A space-like background using an image texture.
 // [x] Apply grayscale filter.
 // [x] At least one orbit is elliptical.
-// [] Use simple shapes and colors to present celestial bodies and orbits.
+// [x] Use simple shapes and colors to present celestial bodies and orbits.
+// [] A complete solar system animation (sun and the eight planets).
 
 
 /* --------------------------------------------------
@@ -100,7 +101,8 @@ async function init() {
     radius = 0.4,
     speed = 0.02,
     center = [0, 0],
-    ellipse = null
+    ellipse = null,
+    parent = null  // <--- new parent
   }) {
 
     // ---- ORBIT LINE ----
@@ -131,7 +133,8 @@ async function init() {
       speed,
       center,
       radius,
-      ellipse
+      ellipse,
+      parent
     });
   }
 
@@ -149,6 +152,13 @@ async function init() {
   await createOrbitingObject({
     radius: 0.25,
     speed: 0.035
+  });
+
+  // Elliptical orbit
+  await createOrbitingObject({
+    radius: 0.15,
+    speed: 0.1,
+    parent: orbitingObjects[1]
   });
 
   // Elliptical orbit
@@ -179,13 +189,23 @@ async function init() {
         y = obj.center[1] + obj.ellipse.b * Math.sin(obj.theta);
       }
 
-      // Convert to GA translation motor
-      const m = normalizeMotor([1, 0, x / 2, y / 2]);
+      // motor for this object relative to its center
+  const localMotor = normalizeMotor([1,0, x/2, y/2]);
 
-      obj.pose[0] = m[0];
-      obj.pose[1] = m[1];
-      obj.pose[2] = m[2];
-      obj.pose[3] = m[3];
+  if (obj.parent) {
+    // multiply with parent's motor
+    const finalMotor = normalizeMotor(geometricProduct(obj.parent.pose, localMotor));
+    obj.pose[0] = finalMotor[0];
+    obj.pose[1] = finalMotor[1];
+    obj.pose[2] = finalMotor[2];
+    obj.pose[3] = finalMotor[3];
+  } else {
+    // standalone
+    obj.pose[0] = localMotor[0];
+    obj.pose[1] = localMotor[1];
+    obj.pose[2] = localMotor[2];
+    obj.pose[3] = localMotor[3];
+  }
 
       obj.theta += obj.speed;
     }
