@@ -44,7 +44,7 @@ async function init() {
   const renderer = new Renderer(canvasTag);
   await renderer.init();
 
-  const sun = new PlanetObject(renderer._device, renderer._canvasFormat, 0.02, 48);z
+  const sun = new PlanetObject(renderer._device, renderer._canvasFormat, 0.02, 48);
 
   // initial motor
   let pose0 = normalizeMotor([1, 0, -0.3, 0]);
@@ -128,7 +128,7 @@ async function init() {
         renderer._canvasFormat,
         planet._vertices,
         pose,
-        "/lib/Shaders/pot1.wgsl",
+        "/lib/Shaders/projective_geometric_algebra.wgsl",
         "triangle-list"
       )
     );
