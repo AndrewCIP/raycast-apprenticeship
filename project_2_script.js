@@ -45,6 +45,7 @@ async function init() {
   await renderer.init();
 
   const planet = new PlanetObject(renderer._device, renderer._canvasFormat, 0.02, 48);
+  const moon = new PlanetObject(renderer._device, renderer._canvasFormat, 0.02, 48);
 
   // initial motor
   let pose0 = normalizeMotor([1, 0, -0.3, 0]);
@@ -104,8 +105,12 @@ async function init() {
     speed = 0.02,
     center = [0, 0],
     ellipse = null,
+    size = 0.02,
     parent = null  // <--- new parent
   }) {
+
+  const planet = new PlanetObject(renderer._device, renderer._canvasFormat, size);
+  await renderer.appendSceneObject(planet);
 
     // ---- ORBIT LINE ----
   await renderer.appendSceneObject(
