@@ -1,6 +1,6 @@
 import Renderer from '/lib/Viz/2DRenderer.js'
-import Camera from '<your new camera object file>'
-import Camera2DVertexObject from '<your new scene object file>'
+import Camera from '/lib/Scene/Camera.js'
+import Camera2DVertexObject from '/lib/Scene/Camera2DVertexObject.js'
 
 async function init() {
   // Create a canvas tag
