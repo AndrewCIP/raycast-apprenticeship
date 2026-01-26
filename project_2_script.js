@@ -217,14 +217,6 @@ async function init() {
 
   // Elliptical orbit
   await createOrbitingObject({
-    radius: 0.04,
-    speed: 0.03,
-    size: 0.01,
-    parent: orbitingObjects[3]
-  });
-
-  // Elliptical orbit
-  await createOrbitingObject({
     ellipse: { a: 0.6, b: 0.3 },
     speed: 0.007,
     size: 0.025
@@ -235,6 +227,30 @@ async function init() {
     ellipse: { a: 0.8, b: 0.4 },
     speed: 0.005,
     size: 0.025
+  });
+
+  // Elliptical orbit
+  await createOrbitingObject({
+    radius: 0.04,
+    speed: 0.03,
+    size: 0.01,
+    parent: orbitingObjects[3]
+  });
+
+  // Elliptical orbit
+  await createOrbitingObject({
+    radius: 0.04,
+    speed: 0.025,
+    size: 0.01,
+    parent: orbitingObjects[7]
+  });
+
+  // Elliptical orbit
+  await createOrbitingObject({
+    radius: 0.05,
+    speed: 0.01,
+    size: 0.005,
+    parent: orbitingObjects[7]
   });
 
   /* --------------------------------------------------
