@@ -44,7 +44,7 @@ async function init() {
   const renderer = new Renderer(canvasTag);
   await renderer.init();
 
-  const sun = new PlanetObject(renderer._device, renderer._canvasFormat, 0.02, 48);
+  const sun = new PlanetObject(renderer._device, renderer._canvasFormat, 0.02, 48);z
 
   // initial motor
   let pose0 = normalizeMotor([1, 0, -0.3, 0]);
@@ -105,11 +105,10 @@ async function init() {
     center = [0, 0],
     ellipse = null,
     size = 0.02,
-    color = '/lib/Shaders/blossom.wgsl',
     parent = null  // <--- new parent
   }) {
 
-  const planet = new PlanetObject(renderer._device, renderer._canvasFormat, size, color);
+  const planet = new PlanetObject(renderer._device, renderer._canvasFormat, size);
   await renderer.appendSceneObject(planet);
 
     // ---- ORBIT LINE ----
@@ -129,7 +128,7 @@ async function init() {
         renderer._canvasFormat,
         planet._vertices,
         pose,
-        "/lib/Shaders/projective_geometric_algebra.wgsl",
+        "/lib/Shaders/pot1.wgsl",
         "triangle-list"
       )
     );
@@ -142,7 +141,6 @@ async function init() {
       radius,
       ellipse,
       size,
-      color,
       parent
     });
   }
@@ -170,8 +168,7 @@ async function init() {
   await createOrbitingObject({
     radius: 0.10,
     speed: 0.04,
-    size: 0.015,
-    color: '/lib/Shaders/pot1.wgsl'
+    size: 0.015
   });
 
   // Perfect circle
@@ -185,8 +182,7 @@ async function init() {
   await createOrbitingObject({
     radius: 0.20,
     speed: 0.025,
-    size: 0.02,
-    color: '/lib/Shaders/pot1.wgsl'
+    size: 0.02
   });
 
   // Perfect circle
@@ -207,8 +203,7 @@ async function init() {
   await createOrbitingObject({
     radius: 0.45,
     speed: 0.01,
-    size: 0.035,
-    color: '/lib/Shaders/pot1.wgsl'
+    size: 0.035
   });
 
   // Elliptical orbit
@@ -222,8 +217,7 @@ async function init() {
   await createOrbitingObject({
     ellipse: { a: 0.8, b: 0.4 },
     speed: 0.005,
-    size: 0.025,
-    color: '/lib/Shaders/pot1.wgsl'
+    size: 0.025
   });
 
   // Elliptical orbit
