@@ -161,43 +161,43 @@ async function init() {
 
   // Mercury
   await createOrbitingObject({
-    radius: 0.20,
+    radius: 0.10,
     speed: 0.04
   });
 
   // Perfect circle
   await createOrbitingObject({
-    radius: 0.3,
+    radius: 0.15,
     speed: 0.03
   });
 
   // Perfect circle
   await createOrbitingObject({
-    radius: 0.4,
+    radius: 0.20,
     speed: 0.025
   });
 
   // Perfect circle
   await createOrbitingObject({
-    radius: 0.5,
+    radius: 0.25,
     speed: 0.02
   });
 
   // Perfect circle
   await createOrbitingObject({
-    radius: 0.7,
+    radius: 0.35,
     speed: 0.012
   });
 
   // Smaller counter-rotating circle
   await createOrbitingObject({
-    radius: 0.9,
+    radius: 0.45,
     speed: 0.01
   });
 
   // Elliptical orbit
   await createOrbitingObject({
-    radius: 0.02,
+    radius: 0.01,
     speed: 0.007,
     parent: orbitingObjects[1]
   });
