@@ -208,6 +208,12 @@ async function init() {
     speed: 0.015
   });
 
+  // Elliptical orbit
+  await createOrbitingObject({
+    ellipse: { a: 0.8, b: 0.4 },
+    speed: 0.015
+  });
+
   /* --------------------------------------------------
      Animation Loop
   -------------------------------------------------- */
