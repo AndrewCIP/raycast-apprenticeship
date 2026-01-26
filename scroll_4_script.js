@@ -11,7 +11,7 @@ async function init() {
   const renderer = new Renderer(canvasTag);
   await renderer.init();
   let camera = new Camera();
-  let triangle = new Camera2DVertexObject(renderer._device, renderer._canvasFormat, camera._pose, new Float32Array([0, 0.5, -0.5, 0, 0.5, 0]), "<your new shader file>");
+  let triangle = new Camera2DVertexObject(renderer._device, renderer._canvasFormat, camera._pose, new Float32Array([0, 0.5, -0.5, 0, 0.5, 0]), "reverse_camera_pga.wgsl");
   await renderer.appendSceneObject(triangle);
 
   // run animation at 60 fps
