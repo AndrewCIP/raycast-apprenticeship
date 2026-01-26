@@ -105,7 +105,8 @@ async function init() {
     center = [0, 0],
     ellipse = null,
     size = 0.02,
-    parent = null  // <--- new parent
+    parent = null,  // <--- new parent
+    shader = "/lib/Shaders/projective_geometric_algebra.wgsl"
   }) {
 
   const planet = new PlanetObject(renderer._device, renderer._canvasFormat, size);
@@ -128,7 +129,7 @@ async function init() {
         renderer._canvasFormat,
         planet._vertices,
         pose,
-        "/lib/Shaders/projective_geometric_algebra.wgsl",
+        shader,
         "triangle-list"
       )
     );
@@ -168,7 +169,8 @@ async function init() {
   await createOrbitingObject({
     radius: 0.10,
     speed: 0.04,
-    size: 0.015
+    size: 0.015,
+    shader: '/lib/Shaders/pot1.wgsl'
   });
 
   // Perfect circle
