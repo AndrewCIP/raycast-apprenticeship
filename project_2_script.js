@@ -141,6 +141,7 @@ async function init() {
       center,
       radius,
       ellipse,
+      size,
       parent
     });
   }
@@ -162,13 +163,14 @@ async function init() {
   await createOrbitingObject({
     radius: 0.00,
     speed: 0.00,
-    size: 0.05
+    size: 0.04
   });
 
   // Mercury
   await createOrbitingObject({
     radius: 0.10,
-    speed: 0.04
+    speed: 0.04,
+    size: 0.01
   });
 
   // Perfect circle
