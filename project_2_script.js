@@ -44,7 +44,7 @@ async function init() {
   const renderer = new Renderer(canvasTag);
   await renderer.init();
 
-  const planet = new PlanetObject(renderer._device, renderer._canvasFormat, 0.05, 48);
+  const planet = new PlanetObject(renderer._device, renderer._canvasFormat, 0.03, 48);
 
   // initial motor
   let pose0 = normalizeMotor([1, 0, -0.3, 0]);
@@ -161,7 +161,31 @@ async function init() {
 
   // Perfect circle
   await createOrbitingObject({
+    radius: 0.20,
+    speed: 0.02
+  });
+
+  // Perfect circle
+  await createOrbitingObject({
     radius: 0.40,
+    speed: 0.02
+  });
+
+  // Perfect circle
+  await createOrbitingObject({
+    radius: 0.60,
+    speed: 0.02
+  });
+
+  // Perfect circle
+  await createOrbitingObject({
+    radius: 0.80,
+    speed: 0.02
+  });
+
+  // Perfect circle
+  await createOrbitingObject({
+    radius: 1.00,
     speed: 0.02
   });
 
