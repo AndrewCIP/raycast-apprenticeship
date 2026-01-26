@@ -9,6 +9,7 @@ import PlanetObject from '/lib/Scene/PlanetObject.js';
 // [x] A space-like background using an image texture.
 // [x] Apply grayscale filter.
 // [x] At least one orbit is elliptical.
+// [] Use simple shapes and colors to present celestial bodies and orbits.
 
 
 /* --------------------------------------------------
@@ -100,6 +101,15 @@ async function init() {
     center = [0, 0],
     ellipse = null
   }) {
+
+    // ---- ORBIT LINE ----
+  await renderer.appendSceneObject(
+    new OrbitLine(
+      renderer._device,
+      renderer._canvasFormat,
+      { center, radius, ellipse }
+    )
+  );
 
     const pose = new Float32Array([1, 0, 0, 0, 1, 1]);
 
