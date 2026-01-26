@@ -1,4 +1,4 @@
-import Renderer from '/lib/Viz/FilteredRenderer.js'
+import FilteredRenderer from '/lib/Viz/FilteredRenderer.js'
 import Standard2DFullScreenObject from "/lib/Scene/Standard2DFullScreenObject.js";
 import ImageFilterObject from "/lib/Scene/ImageFilterObject.js";
 import ImageNosifyFilterObject from "/lib/Scene/ImageNosifyFilterObject.js";
@@ -41,7 +41,7 @@ async function init() {
   document.body.appendChild(canvasTag);
 
   // Renderer
-  const renderer = new Renderer(canvasTag);
+  const renderer = new FilteredRenderer(canvasTag);
   await renderer.init();
 
   const sun = new PlanetObject(renderer._device, renderer._canvasFormat, 0.02, 48);
