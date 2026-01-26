@@ -188,7 +188,7 @@ async function init() {
 
   // Perfect circle
   await createOrbitingObject({
-    radius: 0.25,
+    ellipse: { a: 0.4, b: 0.2 },
     speed: 0.02,
     size: 0.0175
   });
