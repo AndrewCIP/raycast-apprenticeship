@@ -153,65 +153,65 @@ async function init() {
      Create Multiple Orbits
   -------------------------------------------------- */
 
-  // Perfect circle
+  // Sun
   await createOrbitingObject({
     radius: 0.00,
     speed: 0.00
   });
 
+  // Mercury
+  await createOrbitingObject({
+    radius: 0.10,
+    speed: 0.04
+  });
+
+  // Perfect circle
+  await createOrbitingObject({
+    radius: 0.15,
+    speed: 0.03
+  });
+
   // Perfect circle
   await createOrbitingObject({
     radius: 0.20,
+    speed: 0.025
+  });
+
+  // Perfect circle
+  await createOrbitingObject({
+    radius: 0.25,
     speed: 0.02
   });
 
   // Perfect circle
   await createOrbitingObject({
-    radius: 0.40,
-    speed: 0.02
-  });
-
-  // Perfect circle
-  await createOrbitingObject({
-    radius: 0.60,
-    speed: 0.02
-  });
-
-  // Perfect circle
-  await createOrbitingObject({
-    radius: 0.80,
-    speed: 0.02
-  });
-
-  // Perfect circle
-  await createOrbitingObject({
-    radius: 1.00,
-    speed: 0.02
+    radius: 0.35,
+    speed: 0.012
   });
 
   // Smaller counter-rotating circle
   await createOrbitingObject({
-    radius: 0.25,
-    speed: 0.035
+    radius: 0.45,
+    speed: 0.01
   });
 
   // Elliptical orbit
   await createOrbitingObject({
-    radius: 0.15,
-    speed: 0.1,
+    radius: 0.01,
+    speed: 0.007,
     parent: orbitingObjects[1]
   });
 
   // Elliptical orbit
   await createOrbitingObject({
     ellipse: { a: 0.6, b: 0.3 },
-    speed: 0.015
+    speed: 0.007
   });
 
   // Elliptical orbit
   await createOrbitingObject({
     ellipse: { a: 0.8, b: 0.4 },
-    speed: 0.015
+    speed: 0.005
   });
 
   /* --------------------------------------------------
