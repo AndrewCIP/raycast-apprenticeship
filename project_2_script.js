@@ -44,8 +44,8 @@ async function init() {
   const renderer = new Renderer(canvasTag);
   await renderer.init();
 
-  const planet = new PlanetObject(renderer._device, renderer._canvasFormat, 0.02, 48);
-  const moon = new PlanetObject(renderer._device, renderer._canvasFormat, 0.02, 48);
+  const sun = new PlanetObject(renderer._device, renderer._canvasFormat, 0.02, 48);
+  await renderer.appendSceneObject(sun);
 
   // initial motor
   let pose0 = normalizeMotor([1, 0, -0.3, 0]);
@@ -158,12 +158,6 @@ async function init() {
   /* --------------------------------------------------
      Create Multiple Orbits
   -------------------------------------------------- */
-
-  // Sun
-  await createOrbitingObject({
-    radius: 0.00,
-    speed: 0.00,
-  });
 
   // Mercury
   await createOrbitingObject({
