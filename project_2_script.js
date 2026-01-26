@@ -45,7 +45,6 @@ async function init() {
   await renderer.init();
 
   const sun = new PlanetObject(renderer._device, renderer._canvasFormat, 0.02, 48);
-  await renderer.appendSceneObject(sun);
 
   // initial motor
   let pose0 = normalizeMotor([1, 0, -0.3, 0]);
@@ -106,10 +105,11 @@ async function init() {
     center = [0, 0],
     ellipse = null,
     size = 0.02,
+    color = '/lib/Shaders/blossom.wgsl',
     parent = null  // <--- new parent
   }) {
 
-  const planet = new PlanetObject(renderer._device, renderer._canvasFormat, size);
+  const planet = new PlanetObject(renderer._device, renderer._canvasFormat, size, color);
   await renderer.appendSceneObject(planet);
 
     // ---- ORBIT LINE ----
@@ -142,6 +142,7 @@ async function init() {
       radius,
       ellipse,
       size,
+      color,
       parent
     });
   }
@@ -159,11 +160,18 @@ async function init() {
      Create Multiple Orbits
   -------------------------------------------------- */
 
+  // Sun
+  await createOrbitingObject({
+    radius: 0.00,
+    speed: 0.00,
+  });
+
   // Mercury
   await createOrbitingObject({
     radius: 0.10,
     speed: 0.04,
-    size: 0.015
+    size: 0.015,
+    color: '/lib/Shaders/pot1.wgsl'
   });
 
   // Perfect circle
@@ -177,7 +185,8 @@ async function init() {
   await createOrbitingObject({
     radius: 0.20,
     speed: 0.025,
-    size: 0.02
+    size: 0.02,
+    color: '/lib/Shaders/pot1.wgsl'
   });
 
   // Perfect circle
@@ -198,7 +207,8 @@ async function init() {
   await createOrbitingObject({
     radius: 0.45,
     speed: 0.01,
-    size: 0.035
+    size: 0.035,
+    color: '/lib/Shaders/pot1.wgsl'
   });
 
   // Elliptical orbit
@@ -212,7 +222,8 @@ async function init() {
   await createOrbitingObject({
     ellipse: { a: 0.8, b: 0.4 },
     speed: 0.005,
-    size: 0.025
+    size: 0.025,
+    color: '/lib/Shaders/pot1.wgsl'
   });
 
   // Elliptical orbit
