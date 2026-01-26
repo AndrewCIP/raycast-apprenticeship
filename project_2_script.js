@@ -105,7 +105,7 @@ async function init() {
     center = [0, 0],
     ellipse = null,
     size = 0.02,
-    parent = null,  // <--- new parent
+    parent = null,
     shader = '/lib/Shaders/projective_geometric_algebra.wgsl'
   }) {
 
