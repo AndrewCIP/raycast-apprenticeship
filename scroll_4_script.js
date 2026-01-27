@@ -44,6 +44,41 @@ window.addEventListener("keydown", (e) => {
   }
 });
 
+let prevP = { x: 0, y: 0 };
+
+let dragging = false;            // are we currently dragging?
+canvasTag.addEventListener('mousemove', (e) => {
+  if (!dragging) return;
+  const ndc = mouseToNDC(e);
+  const dx = ndc[0] - prevP.x;
+  const dy = ndc[1] - prevP.y;
+  prevP.x = ndc[0];
+  prevP.y = ndc[1];
+  // Note: we apply the opposite direction to make the mouse movement align with the object
+  if (dx > 0) camera.moveRight(-dx);
+  else camera.moveLeft(dx);
+  if (dy > 0) camera.moveUp(-dy);
+  else camera.moveDown(dy);
+  triangle.updateCameraPose();
+  renderer.render();
+});
+canvasTag.addEventListener('mousedown', (e) => {
+  dragging = true;
+  // 1) mouse -> scene
+  const ndc = mouseToNDC(e);
+  // 2) store previous location
+  prevP.x = ndc[0];
+  prevP.y = ndc[1];
+});
+
+canvasTag.addEventListener('mouseup', (e) => {
+  dragging = false;
+});
+
+canvasTag.addEventListener('mouseleave', (e) => {
+  dragging = false;
+});
+
   // run animation at 60 fps
   var frameCnt = 0;
   var tgtFPS = 60;
@@ -66,6 +101,12 @@ window.addEventListener("keydown", (e) => {
     frameCnt = 0;
   }, 1000); // call every 1000 ms
   return renderer;
+}
+
+function mouseToNDC(e) {
+  const x = (e.clientX / window.innerWidth) * 2 - 1;
+  const y = (-e.clientY / window.innerHeight) * 2 + 1;
+  return [x, y];
 }
 
 init().then( ret => {
