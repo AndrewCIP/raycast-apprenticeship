@@ -52,15 +52,18 @@ canvasTag.addEventListener('mousemove', (e) => {
   const ndc = mouseToNDC(e);
   const dx = ndc[0] - prevP.x;
   const dy = ndc[1] - prevP.y;
-  prevP.x = ndc[0];
-  prevP.y = ndc[1];
-  // Note: we apply the opposite direction to make the mouse movement align with the object
-  if (dx > 0) camera.moveRight(-dx);
-  else camera.moveLeft(dx);
-  if (dy > 0) camera.moveUp(-dy);
-  else camera.moveDown(dy);
-  triangle.updateCameraPose();
-  renderer.render();
+  let diff = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
+  if (diff > 0.001) { // a dirty flag spell
+    prevP.x = ndc[0];
+    prevP.y = ndc[1];
+    // Note: we apply the opposite direction to make the mouse movement align with the object
+    if (dx > 0) camera.moveRight(-dx);
+    else camera.moveLeft(dx);
+    if (dy > 0) camera.moveUp(-dy);
+    else camera.moveDown(dy);
+    triangle.updateCameraPose();
+    renderer.render();
+  }
 });
 canvasTag.addEventListener('mousedown', (e) => {
   dragging = true;
