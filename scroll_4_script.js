@@ -14,6 +14,36 @@ async function init() {
   let triangle = new Camera2DVertexObject(renderer._device, renderer._canvasFormat, camera._pose, new Float32Array([0, 0.5, -0.5, 0, 0.5, 0]), "/lib/Shaders/reverse_camera_pga.wgsl");
   await renderer.appendSceneObject(triangle);
 
+  var movespeed = 0.05;
+window.addEventListener("keydown", (e) => {
+  switch (e.key) {
+    case 'ArrowUp': case 'w': case 'W':
+      camera.moveUp(movespeed);
+      triangle.updateCameraPose();
+      break;
+    case 'ArrowDown': case 's': case 'S':   
+      camera.moveDown(movespeed);
+      triangle.updateCameraPose();     
+      break;
+    case 'ArrowLeft': case 'a': case 'A':  
+      camera.moveLeft(movespeed);
+      triangle.updateCameraPose();
+      break;
+    case 'ArrowRight': case 'd': case 'D': 
+      camera.moveRight(movespeed);
+      triangle.updateCameraPose();       
+      break;
+    case 'q': case 'Q':  
+      camera.zoomIn();
+      triangle.updateCameraPose();       
+      break;
+    case 'e': case 'E':
+      camera.zoomOut();
+      triangle.updateCameraPose();  
+      break;
+  }
+});
+
   // run animation at 60 fps
   var frameCnt = 0;
   var tgtFPS = 60;
