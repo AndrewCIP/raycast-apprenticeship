@@ -69,7 +69,18 @@ canvasTag.addEventListener('mousemove', (e) => {
   mouseX /= camera._pose[4];
   mouseY /= camera._pose[5];
   let p = PGA2D.applyMotorToPoint([mouseX, mouseY], [camera._pose[0], camera._pose[1], camera._pose[2], camera._pose[3]]);
-  console.log(`Mouse is at (${p[0]}, ${p[1]})`);
+  let halfLength = 1; // half length
+  let cellLength = halfLength * 2; // full length
+  let u = Math.floor((p[0] + halfLength) / cellLength * 10);
+  let v = Math.floor((p[1] + halfLength) / cellLength * 10);
+
+  if (u >= 0 && u < 10 && v >= 0 && v < 10) {
+  let offsetX = - halfLength + u / 10 * cellLength + cellLength / 10 * 0.5;
+  let offsetY = - halfLength + v / 10 * cellLength + cellLength / 10 * 0.5;
+  if (-0.5 / 10 + offsetX <= p[0] && p[0] <= 0.5 / 10 + offsetX && -0.5 / 10 + offsetY <= p[1] && p[1] <= 0.5 / 10 + offsetY) {
+    console.log(`in cell (${u}, ${v})`);
+  }
+}
 });
 
 let prevP = { x: 0, y: 0 };
