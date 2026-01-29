@@ -3,6 +3,7 @@ import Camera from '/lib/Scene/Camera.js'
 import Camera2DVertexObject from '/lib/Scene/Camera2DVertexObject.js'
 import StandardTextObject from '/lib/Scene/StandardTextObject.js';
 import Grid from '/lib/Scene/Grid.js';
+import PGA2D from '/lib/Scene/PGA2D.js';
 
 async function init() {
   // Create a canvas tag
@@ -60,6 +61,15 @@ window.addEventListener("keydown", (e) => {
         fpsText.toggleVisibility();
         break;
   }
+});
+
+canvasTag.addEventListener('mousemove', (e) => {
+  var mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+  var mouseY = (-e.clientY / window.innerHeight) * 2 + 1;
+  mouseX /= camera._pose[4];
+  mouseY /= camera._pose[5];
+  let p = PGA2D.applyMotorToPoint([mouseX, mouseY], [camera._pose[0], camera._pose[1], camera._pose[2], camera._pose[3]]);
+  console.log(`Mouse is at (${p[0]}, ${p[1]})`);
 });
 
 let prevP = { x: 0, y: 0 };
