@@ -2,14 +2,12 @@ import Renderer from '/lib/Viz/2DRenderer.js'
 import Camera from '/lib/Scene/Camera.js'
 import Camera2DVertexObject from '/lib/Scene/Camera2DVertexObject.js'
 import StandardTextObject from '/lib/Scene/StandardTextObject.js';
-import Grid from '/lib/Scene/Grid.js';
 
 async function init() {
   // Create a canvas tag
   const canvasTag = document.createElement('canvas');
   canvasTag.id = "renderCanvas";
   document.body.appendChild(canvasTag);
-
   // Create a simple renderer
   const renderer = new Renderer(canvasTag);
   await renderer.init();
@@ -24,13 +22,12 @@ async function init() {
   ]);
 
   let camera = new Camera();
-  var quad = new Grid(renderer._device, renderer._canvasFormat, camera._pose, vertices, "/lib/Shaders/reverse_camera_pga_grid.wgsl", "line-strip", 10 * 10);
+  var quad = new Camera2DVertexObject(renderer._device, renderer._canvasFormat, camera._pose, vertices, "/lib/Shaders/reverse_camera_pga_grid.wgsl", "line-strip", 10 * 10);
   await renderer.appendSceneObject(quad);
 
 let fps = '??';
 var fpsText = new StandardTextObject('fps: ' + fps);
 
-/*
   var movespeed = 0.05;
 window.addEventListener("keydown", (e) => {
   switch (e.key) {
@@ -63,7 +60,6 @@ window.addEventListener("keydown", (e) => {
         break;
   }
 });
-*/
 
 let prevP = { x: 0, y: 0 };
 
