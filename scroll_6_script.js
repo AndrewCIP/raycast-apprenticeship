@@ -12,7 +12,15 @@ async function init() {
 
   var particles = new ParticleSystemObject(renderer._device, renderer._canvasFormat, "/lib/Shaders/particles.wgsl");
   await renderer.appendSceneObject(particles);
-  renderer.render();
+  
+  // Animation loop
+  function renderFrame() {
+    renderer.render();
+    requestAnimationFrame(renderFrame);
+  }
+
+  renderFrame();
+  return renderer;
 }
 
 init().then( ret => {
