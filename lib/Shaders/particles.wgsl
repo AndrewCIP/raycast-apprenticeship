@@ -25,7 +25,9 @@
 struct Particle {
   position: vec2f,
   initialPos: vec2f,
-  velocity: vec2f
+  velocity: vec2f,
+  lifespan: f32,
+  initialLifespan: f32
 }
 
 // TODO 4: Write the bind group spells here using array<Particle>
@@ -36,13 +38,14 @@ struct Particle {
 @vertex
 fn vertexMain(@builtin(instance_index) idx: u32, @builtin(vertex_index) vIdx: u32) -> @builtin(position) vec4f {
   // TODO 5: Revise the vertex shader to draw circle to visualize the particles
-  let particle = particlesIn[idx].position;
-  let size = 0.0125;
+  let particle = particlesIn[idx];
+  let lifeScale = f32(particle.lifespan) / 255.0;
+  let size = 0.0125 * lifeScale;
   let pi = 3.14159265;
   let theta = 2. * pi / 8. * f32(vIdx);
   let x = cos(theta) * size;
   let y = sin(theta) * size;
-  return vec4f(vec2f(x + particle.x, y + particle.y), 0, 1);
+  return vec4f(vec2f(x + particle.position.x, y + particle.position.y), 0, 1);
 }
 
 @fragment
@@ -58,13 +61,17 @@ fn computeMain(@builtin(global_invocation_id) global_id: vec3u) {
     // TODO 6: Revise the compute shader to update the particles using the velocity
     var particle = particlesIn[idx];
     particle.position = particle.position + particle.velocity;
+    particle.lifespan = particle.lifespan - 1.0;
     
+    // TOOD 7: Add boundary checking and respawn the particle when it is offscreen
     // Boundary check: if outside [-1, 1] in either axis
     if (particle.position.x < -1.0 || particle.position.x > 1.0 ||
-        particle.position.y < -1.0 || particle.position.y > 1.0) {
+        particle.position.y < -1.0 || particle.position.y > 1.0 ||
+        particle.lifespan <= 0.0) {
 
         // Respawn at initial position
         particle.position = particle.initialPos;
+        particle.lifespan = particle.initialLifespan;
 
         // Optionally reset velocity (your choice)
         // p.velocity = vec2f(0.0, 0.0);
@@ -73,6 +80,6 @@ fn computeMain(@builtin(global_invocation_id) global_id: vec3u) {
 
     particlesOut[idx] = particle;
     
-    // TOOD 7: Add boundary checking and respawn the particle when it is offscreen
+    
   }
 }
