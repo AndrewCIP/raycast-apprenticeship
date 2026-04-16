@@ -68,6 +68,7 @@ canvasTag.addEventListener('mousemove', (e) => {
   var mouseY = (-e.clientY / window.innerHeight) * 2 + 1;
   mouseX /= camera._pose[4];
   mouseY /= camera._pose[5];
+  console.log(`x: ${mouseX}, ${mouseY}`);
   let p = PGA2D.applyMotorToPoint([mouseX, mouseY], [camera._pose[0], camera._pose[1], camera._pose[2], camera._pose[3]]);
   let halfLength = 1; // half length
   let cellLength = halfLength * 2; // full length

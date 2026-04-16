@@ -108,9 +108,21 @@ fn updateMain(@builtin(global_invocation_id) global_id: vec3u) {
   
   if (idx < arrayLength(&particlesIn)) {
     var particle = particlesIn[idx];
-    particlesOut[idx].p = particle.p + particle.v + particlesOut[idx].dv; // update the posistion
-    particlesOut[idx].v = (particle.v + particlesOut[idx].dv) * 0.95;     // damping
+
+    if (particle.dummy != 1){
+        particlesOut[idx].p = particle.p + particle.v + particlesOut[idx].dv; // update the posistion
+        particlesOut[idx].v = (particle.v + particlesOut[idx].dv) * 0.95;     // damping
+    }
+    else {
+        particlesOut[idx] = particle;
+    }
+
     particlesOut[idx].dv = vec2f(0, 0);                                   // reset delta velocity to zeros
     particlesOut[idx].m = particle.m;                                     // copy the mass over
+    particlesOut[idx].dummy = particle.dummy;
+
+    if (idx == 255u) {
+        particlesOut[idx].v += vec2f(0.0, -0.001);
+    }
   }
 }
