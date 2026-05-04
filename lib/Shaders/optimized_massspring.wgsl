@@ -81,7 +81,7 @@ var<private> tint_symbol_26_2 : vec3u;
 
 @group(0) @binding(1) var<storage, read_write> tint_symbol_11 : tint_symbol_10_block;
 
-@group(0) @binding(2) var<storage, read_write> tint_symbol_12 : tint_symbol_12_block;
+@group(0) @binding(2) var<storage> tint_symbol_12 : tint_symbol_12_block;
 
 fn tint_ftou(v : f32) -> u32 {
   return select(4294967295u, select(u32(v), 0u, (v < 0.0f)), (v < 4294967040.0f));
