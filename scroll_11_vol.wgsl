@@ -256,6 +256,48 @@ fn volumeColor(intensity: f32) -> vec3f {
   return mix(coolColor * 0.12, warmColor, t);
 }
 
+// ── Part 5: Depth-colored Maximum Intensity Projection (Depth-MIP) ───────────
+//
+// A combined mode: march the ray tracking the voxel value and the depth (t)
+// at which that maximum was found.  The final color encodes:
+//   • Hue   — depth of the peak voxel mapped through the falseColor heat-map
+//             (blue = near the camera, red = far from the camera).
+//   • Value — normalised max intensity (darker = sparser tissue).
+//
+// This "color depth encoding" ties spatial position along the ray directly to
+// the rendered color, making it easy to read both density and depth in one view.
+
+fn traceSceneDepthMIP(uv: vec2i, p: vec3f, d: vec3f) {
+  let hits = resolveHits(rayVolumeIntersection(p, d));
+  if (hits.x < 0.0) { textureStore(outTexture, uv, MISS_COLOR); return; }
+
+  var maxVal:    f32 = 0.0;
+  var maxDepthT: f32 = hits.x; // t-value at which the maximum was found
+  let dt = (hits.y - hits.x) / f32(NUM_STEPS);
+
+  for (var i = 0; i < NUM_STEPS; i++) {
+    let t       = hits.x + (f32(i) + 0.5) * dt;
+    let worldPt = p + t * d;
+    let v = sampleVolume(worldPt);
+    if (v > maxVal) {
+      maxVal    = v;
+      maxDepthT = t;
+    }
+  }
+
+  // Treat near-empty rays as misses
+  if (maxVal < 10.0) { textureStore(outTexture, uv, MISS_COLOR); return; }
+
+  // Normalise depth to [0, 1] within the volume segment
+  let normDepth = (maxDepthT - hits.x) / max(hits.y - hits.x, EPSILON);
+  // Normalise intensity for brightness
+  let intensity = clamp(maxVal / 4095.0, 0.0, 1.0);
+
+  // Depth drives hue, intensity drives brightness
+  let depthColor = falseColor(normDepth);
+  textureStore(outTexture, uv, vec4f(depthColor * intensity, 1.0));
+}
+
 // ── Part 2: Maximum Intensity Projection (MIP) ──────────────────────────────
 //
 // Walk along the ray and record the highest voxel value encountered.  Map
@@ -432,5 +474,25 @@ fn computeProjectiveDepthMain(@builtin(global_invocation_id) global_id: vec3u) {
   if (uv.x < texDim.x && uv.y < texDim.y) {
     let ray = projectiveRay(uv);
     traceSceneDepth(uv, ray[0], ray[1]);
+  }
+}
+
+@compute @workgroup_size(16, 16)
+fn computeOrthogonalDepthMIPMain(@builtin(global_invocation_id) global_id: vec3u) {
+  let uv = vec2i(global_id.xy);
+  let texDim = vec2i(textureDimensions(outTexture));
+  if (uv.x < texDim.x && uv.y < texDim.y) {
+    let ray = orthogonalRay(uv);
+    traceSceneDepthMIP(uv, ray[0], ray[1]);
+  }
+}
+
+@compute @workgroup_size(16, 16)
+fn computeProjectiveDepthMIPMain(@builtin(global_invocation_id) global_id: vec3u) {
+  let uv = vec2i(global_id.xy);
+  let texDim = vec2i(textureDimensions(outTexture));
+  if (uv.x < texDim.x && uv.y < texDim.y) {
+    let ray = projectiveRay(uv);
+    traceSceneDepthMIP(uv, ray[0], ray[1]);
   }
 }

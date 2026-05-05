@@ -3,10 +3,16 @@ import VolumeRenderingObject from '/lib/Scene/VolumeRenderingObject.js'
 import Camera                from '/lib/Viz/3DCamera.js'
 
 // ── Rendering mode constants ─────────────────────────────────────────────────
-const MODE_MIP   = 0;
-const MODE_DRR   = 1;
-const MODE_DEPTH = 2;
-const MODE_NAMES = ['MIP (Maximum Intensity)', 'DRR (Beer–Lambert)', 'Depth (False Color)'];
+const MODE_MIP       = 0;
+const MODE_DRR       = 1;
+const MODE_DEPTH     = 2;
+const MODE_DEPTH_MIP = 3;
+const MODE_NAMES = [
+  'MIP (Maximum Intensity)',
+  'DRR (Beer–Lambert)',
+  'Depth (False Color)',
+  'Depth-MIP (Color Depth Encoding)',
+];
 
 // ── Scroll11VolumeObject ─────────────────────────────────────────────────────
 //
@@ -34,9 +40,10 @@ class Scroll11VolumeObject extends VolumeRenderingObject {
 
     // _pipelines[mode][isProjective ? 1 : 0]
     this._pipelines = [
-      [make('computeOrthogonalMIPMain'),   make('computeProjectiveMIPMain')],
-      [make('computeOrthogonalDRRMain'),   make('computeProjectiveDRRMain')],
-      [make('computeOrthogonalDepthMain'), make('computeProjectiveDepthMain')],
+      [make('computeOrthogonalMIPMain'),      make('computeProjectiveMIPMain')],
+      [make('computeOrthogonalDRRMain'),      make('computeProjectiveDRRMain')],
+      [make('computeOrthogonalDepthMain'),    make('computeProjectiveDepthMain')],
+      [make('computeOrthogonalDepthMIPMain'), make('computeProjectiveDepthMIPMain')],
     ];
 
     // The parent class uses _computePipeline to build the bind group layout;
@@ -145,9 +152,17 @@ async function init() {
   hudModeEl.className = 'hud-value';
   addRow(camSec, 'Toggle Projective / Orthographic', ['P'], hudModeEl);
 
+  const hudFocalXEl = document.createElement('span');
+  hudFocalXEl.className = 'hud-value';
+  addRow(camSec, 'Focal X', ['[', ']'], hudFocalXEl);
+
+  const hudFocalYEl = document.createElement('span');
+  hudFocalYEl.className = 'hud-value';
+  addRow(camSec, 'Focal Y', ['{', '}'], hudFocalYEl);
+
   const hudFocalEl = document.createElement('span');
   hudFocalEl.className = 'hud-value';
-  addRow(camSec, 'Focal Length', ['+', '-'], hudFocalEl);
+  addRow(camSec, 'Focal X & Y', ['+', '-'], hudFocalEl);
 
   addRow(camSec, 'Reset Camera', ['R']);
 
@@ -156,6 +171,7 @@ async function init() {
   addRow(renderSec, 'Maximum Intensity Projection',    ['1']);
   addRow(renderSec, 'DRR (Beer–Lambert absorption)',   ['2']);
   addRow(renderSec, 'Depth false-color encoding',      ['3']);
+  addRow(renderSec, 'Depth-MIP (color depth encoding)', ['4']);
 
   const hudRenderModeEl = document.createElement('span');
   hudRenderModeEl.className = 'hud-value';
@@ -191,7 +207,9 @@ async function init() {
     hudModeEl.textContent = camera._isProjective ? 'Projective' : 'Orthographic';
   }
   function updateHudFocal() {
-    hudFocalEl.textContent = camera._focal[0].toFixed(1);
+    hudFocalEl.textContent  = `fx:${camera._focal[0].toFixed(1)}  fy:${camera._focal[1].toFixed(1)}`;
+    hudFocalXEl.textContent = camera._focal[0].toFixed(2);
+    hudFocalYEl.textContent = camera._focal[1].toFixed(2);
   }
   function updateHudRenderMode() {
     hudRenderModeEl.textContent = MODE_NAMES[volObj._mode];
@@ -229,7 +247,7 @@ async function init() {
         cameraDirty = true;
         break;
 
-      // ── Focal length ───────────────────────────────────────────────────
+      // ── Focal length — X and Y together ───────────────────────────────────
       case '+': case '=':
         camera._focal[0] += 0.1;
         camera._focal[1] += 0.1;
@@ -238,6 +256,30 @@ async function init() {
         break;
       case '-':
         camera._focal[0] = Math.max(0.1, camera._focal[0] - 0.1);
+        camera._focal[1] = Math.max(0.1, camera._focal[1] - 0.1);
+        volObj.updateCameraFocal();
+        updateHudFocal();
+        break;
+
+      // ── Focal length — X axis only ─────────────────────────────────────
+      case ']':
+        camera._focal[0] += 0.1;
+        volObj.updateCameraFocal();
+        updateHudFocal();
+        break;
+      case '[':
+        camera._focal[0] = Math.max(0.1, camera._focal[0] - 0.1);
+        volObj.updateCameraFocal();
+        updateHudFocal();
+        break;
+
+      // ── Focal length — Y axis only ─────────────────────────────────────
+      case '}':
+        camera._focal[1] += 0.1;
+        volObj.updateCameraFocal();
+        updateHudFocal();
+        break;
+      case '{':
         camera._focal[1] = Math.max(0.1, camera._focal[1] - 0.1);
         volObj.updateCameraFocal();
         updateHudFocal();
@@ -264,6 +306,10 @@ async function init() {
         break;
       case '3':
         volObj.setMode(MODE_DEPTH);
+        updateHudRenderMode();
+        break;
+      case '4':
+        volObj.setMode(MODE_DEPTH_MIP);
         updateHudRenderMode();
         break;
 
