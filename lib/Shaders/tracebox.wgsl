@@ -504,6 +504,19 @@ fn assignColor(uv: vec2i, t: f32, idx: i32) {
   textureStore(outTexture, uv, color);  
 }
 
+// Shade and store a pyramid hit (shared by both compute entry points)
+fn assignPyramidColor(uv: vec2i, ph: PyramidHit) {
+  var color: vec4f;
+  if (ph.is_base) {
+    color = vec4f(0.6, 0.4, 0.1, 1.0);
+  } else {
+    let light   = normalize(vec3f(1.0, 2.0, 1.0));
+    let diffuse = max(0.0, dot(ph.normal, light));
+    color = vec4f(vec3f(1.0, 0.75, 0.2) * (0.3 + 0.7 * diffuse), 1.0);
+  }
+  textureStore(outTexture, uv, color);
+}
+
 @compute
 @workgroup_size(16, 16)
 fn computeOrthogonalMain(@builtin(global_invocation_id) global_id: vec3u) {
@@ -524,15 +537,7 @@ fn computeOrthogonalMain(@builtin(global_invocation_id) global_id: vec3u) {
     // test the pyramid inside the box
     var pyramidInfo = rayPyramidIntersect(spt, rdir);
     if (hitInfo.x > 0.0 && pyramidInfo.hit && pyramidInfo.t < hitInfo.x) {
-      var color: vec4f;
-      if (pyramidInfo.is_base) {
-        color = vec4f(0.6, 0.4, 0.1, 1.0);
-      } else {
-        let light   = normalize(vec3f(1.0, 2.0, 1.0));
-        let diffuse = max(0.0, dot(pyramidInfo.normal, light));
-        color = vec4f(vec3f(1.0, 0.75, 0.2) * (0.3 + 0.7 * diffuse), 1.0);
-      }
-      textureStore(outTexture, uv, color);
+      assignPyramidColor(uv, pyramidInfo);
     } else {
       // assign colors
       assignColor(uv, hitInfo.x, i32(hitInfo.y));
@@ -566,15 +571,7 @@ fn computeProjectiveMain(@builtin(global_invocation_id) global_id: vec3u) {
     // test the pyramid inside the box
     var pyramidInfo = rayPyramidIntersect(spt, rdir);
     if (hitInfo.x > 0.0 && pyramidInfo.hit && pyramidInfo.t < hitInfo.x) {
-      var color: vec4f;
-      if (pyramidInfo.is_base) {
-        color = vec4f(0.6, 0.4, 0.1, 1.0);
-      } else {
-        let light   = normalize(vec3f(1.0, 2.0, 1.0));
-        let diffuse = max(0.0, dot(pyramidInfo.normal, light));
-        color = vec4f(vec3f(1.0, 0.75, 0.2) * (0.3 + 0.7 * diffuse), 1.0);
-      }
-      textureStore(outTexture, uv, color);
+      assignPyramidColor(uv, pyramidInfo);
     } else {
       // assign colors
       assignColor(uv, hitInfo.x, i32(hitInfo.y));

@@ -86,7 +86,7 @@ async function init() {
 
   const hudFocalEl = document.createElement('span');
   hudFocalEl.className = 'hud-value';
-  addRow(camSec, 'Focal Length', ['+', '−'], hudFocalEl);
+  addRow(camSec, 'Focal Length', ['+', '-'], hudFocalEl);
 
   addRow(camSec, 'Reset Pose', ['R']);
 
