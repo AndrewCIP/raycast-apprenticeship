@@ -349,6 +349,104 @@ fn transformPt(pt: vec3f) -> vec3f {
   return out;
 }
 
+// Möller–Trumbore ray-triangle intersection.
+// Returns the ray parameter t of the hit, or 1e10 if no intersection.
+fn rayTriangleIntersect(orig: vec3f, dir: vec3f, v0: vec3f, v1: vec3f, v2: vec3f) -> f32 {
+  let edge1 = v1 - v0;
+  let edge2 = v2 - v0;
+  let h = cross(dir, edge2);
+  let a = dot(edge1, h);
+  if (abs(a) < EPSILON) { return 1e10; } // ray parallel to triangle
+  let f = 1.0 / a;
+  let s = orig - v0;
+  let u = f * dot(s, h);
+  if (u < 0.0 || u > 1.0) { return 1e10; }
+  let q = cross(s, edge1);
+  let v = f * dot(dir, q);
+  if (v < 0.0 || u + v > 1.0) { return 1e10; }
+  let t = f * dot(edge2, q);
+  if (t < EPSILON) { return 1e10; } // intersection behind or at ray origin
+  return t;
+}
+
+// Hit result for the pyramid
+struct PyramidHit {
+  t:       f32,
+  normal:  vec3f,
+  is_base: bool,
+  hit:     bool,
+}
+
+// Test all 6 pyramid triangles and return the closest hit.
+// The pyramid lives in model space (same −0.5…+0.5 cube space):
+//   Apex : (0.0,  0.4, 0.0)
+//   Base corners at y = −0.35, (±0.35, −0.35, ±0.35)
+fn rayPyramidIntersect(orig: vec3f, dir: vec3f) -> PyramidHit {
+  let apex = vec3f( 0.0,   0.4,  0.0);
+  let pa   = vec3f( 0.35, -0.35,  0.35);
+  let pb   = vec3f(-0.35, -0.35,  0.35);
+  let pc   = vec3f(-0.35, -0.35, -0.35);
+  let pd   = vec3f( 0.35, -0.35, -0.35);
+
+  var result: PyramidHit;
+  result.hit     = false;
+  result.t       = 1e10;
+  result.is_base = false;
+  result.normal  = vec3f(0.0, 1.0, 0.0);
+
+  var t_test: f32;
+  var n: vec3f;
+
+  // ── Side face 1: apex, pa, pb  (front, z > 0)
+  t_test = rayTriangleIntersect(orig, dir, apex, pa, pb);
+  if (t_test < result.t) {
+    n = normalize(cross(pa - apex, pb - apex));
+    result.t = t_test; result.hit = true; result.is_base = false;
+    result.normal = select(-n, n, dot(n, -dir) >= 0.0);
+  }
+
+  // ── Side face 2: apex, pb, pc  (left, x < 0)
+  t_test = rayTriangleIntersect(orig, dir, apex, pb, pc);
+  if (t_test < result.t) {
+    n = normalize(cross(pb - apex, pc - apex));
+    result.t = t_test; result.hit = true; result.is_base = false;
+    result.normal = select(-n, n, dot(n, -dir) >= 0.0);
+  }
+
+  // ── Side face 3: apex, pc, pd  (back, z < 0)
+  t_test = rayTriangleIntersect(orig, dir, apex, pc, pd);
+  if (t_test < result.t) {
+    n = normalize(cross(pc - apex, pd - apex));
+    result.t = t_test; result.hit = true; result.is_base = false;
+    result.normal = select(-n, n, dot(n, -dir) >= 0.0);
+  }
+
+  // ── Side face 4: apex, pd, pa  (right, x > 0)
+  t_test = rayTriangleIntersect(orig, dir, apex, pd, pa);
+  if (t_test < result.t) {
+    n = normalize(cross(pd - apex, pa - apex));
+    result.t = t_test; result.hit = true; result.is_base = false;
+    result.normal = select(-n, n, dot(n, -dir) >= 0.0);
+  }
+
+  // ── Base triangle 1: pa, pb, pc
+  t_test = rayTriangleIntersect(orig, dir, pa, pb, pc);
+  if (t_test < result.t) {
+    result.t = t_test; result.hit = true; result.is_base = true;
+    result.normal = vec3f(0.0, -1.0, 0.0);
+  }
+
+  // ── Base triangle 2: pa, pc, pd
+  t_test = rayTriangleIntersect(orig, dir, pa, pc, pd);
+  if (t_test < result.t) {
+    result.t = t_test; result.hit = true; result.is_base = true;
+    result.normal = vec3f(0.0, -1.0, 0.0);
+  }
+
+  if (result.t >= 1e9) { result.hit = false; }
+  return result;
+}
+
 // a function to compute the ray box intersection
 fn rayBoxIntersection(s: vec3f, d: vec3f) -> vec2f { // output is (t, idx)
   // t is the hit value, idx is the fact it hits
@@ -406,6 +504,19 @@ fn assignColor(uv: vec2i, t: f32, idx: i32) {
   textureStore(outTexture, uv, color);  
 }
 
+// Shade and store a pyramid hit (shared by both compute entry points)
+fn assignPyramidColor(uv: vec2i, ph: PyramidHit) {
+  var color: vec4f;
+  if (ph.is_base) {
+    color = vec4f(0.6, 0.4, 0.1, 1.0);
+  } else {
+    let light   = normalize(vec3f(1.0, 2.0, 1.0));
+    let diffuse = max(0.0, dot(ph.normal, light));
+    color = vec4f(vec3f(1.0, 0.75, 0.2) * (0.3 + 0.7 * diffuse), 1.0);
+  }
+  textureStore(outTexture, uv, color);
+}
+
 @compute
 @workgroup_size(16, 16)
 fn computeOrthogonalMain(@builtin(global_invocation_id) global_id: vec3u) {
@@ -423,8 +534,14 @@ fn computeOrthogonalMain(@builtin(global_invocation_id) global_id: vec3u) {
     rdir = transformDir(rdir);
     // compute the intersection to the object
     var hitInfo = rayBoxIntersection(spt, rdir);
-    // assign colors
-    assignColor(uv, hitInfo.x, i32(hitInfo.y));
+    // test the pyramid inside the box
+    var pyramidInfo = rayPyramidIntersect(spt, rdir);
+    if (hitInfo.x > 0.0 && pyramidInfo.hit && pyramidInfo.t < hitInfo.x) {
+      assignPyramidColor(uv, pyramidInfo);
+    } else {
+      // assign colors
+      assignColor(uv, hitInfo.x, i32(hitInfo.y));
+    }
   }
 }
 
@@ -451,7 +568,13 @@ fn computeProjectiveMain(@builtin(global_invocation_id) global_id: vec3u) {
     rdir = transformDir(rdir);
     // compute the intersection to the object
     var hitInfo = rayBoxIntersection(spt, rdir);
-    // assign colors
-    assignColor(uv, hitInfo.x, i32(hitInfo.y));
+    // test the pyramid inside the box
+    var pyramidInfo = rayPyramidIntersect(spt, rdir);
+    if (hitInfo.x > 0.0 && pyramidInfo.hit && pyramidInfo.t < hitInfo.x) {
+      assignPyramidColor(uv, pyramidInfo);
+    } else {
+      // assign colors
+      assignColor(uv, hitInfo.x, i32(hitInfo.y));
+    }
   }
 }
