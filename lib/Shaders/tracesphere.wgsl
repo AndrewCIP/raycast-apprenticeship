@@ -108,61 +108,252 @@ struct Camera {
   res:   vec2f,        // image width/height (8 bytes)
 }
 
-// ─── Ellipsoid: pose motor + semi-axes ───────────────────────────────────────
+// ─── Ellipsoid / shape: pose motor + semi-axes ───────────────────────────────
+// radii.xyz doubles as: ellipsoid semi-axes, cube half-extents,
+// cylinder (radius=x, half-height=y), cone (base-radius=x, half-height=y).
 struct Sphere {
   motor: MultiVector,  // pose motor (64 bytes)
-  radii: vec4f,        // x, y, z semi-axes (w unused) (16 bytes)
+  radii: vec4f,        // x, y, z dimensions (w unused) (16 bytes)
+}
+
+// ─── Shape selector ───────────────────────────────────────────────────────────
+// shapeIndex: 0 = sphere/ellipsoid, 1 = cube, 2 = cylinder, 3 = cone
+struct ShapeConfig {
+  shapeIndex: u32,
 }
 
 @group(0) @binding(0) var<uniform> cameraPose: Camera;
 @group(0) @binding(1) var<uniform> sphere:     Sphere;
 @group(0) @binding(2) var          outTexture: texture_storage_2d<rgba8unorm, write>;
+@group(0) @binding(3) var<uniform> shapeConf:  ShapeConfig;
 
-// ─── Ray-ellipsoid intersection ───────────────────────────────────────────────
-// camOrig / camDir are in camera space.
-// Returns the smallest positive t along the ray, or -1.0 on miss.
-fn raySphereIntersect(camOrig: vec3f, camDir: vec3f) -> f32 {
-  // Transform ray from camera space → world space → ellipsoid local space
-  var o = applyMotorToPoint(camOrig, cameraPose.motor);
-  o     = applyMotorToPoint(o,       reverse(sphere.motor));
-  var d = applyMotorToDir(camDir, cameraPose.motor);
-  d     = applyMotorToDir(d,      reverse(sphere.motor));
-
-  // Stretch into unit-sphere space by dividing by semi-axes
-  let r  = sphere.radii.xyz;
-  let os = o / r;
-  let ds = d / r;
-
-  // Solve |os + t*ds|² = 1
+// ─── Sphere (ellipsoid) intersection & normal ─────────────────────────────────
+// o, d: ray already transformed into object space.
+fn intersectSphereObj(o: vec3f, d: vec3f) -> f32 {
+  let r    = sphere.radii.xyz;
+  let os   = o / r;
+  let ds   = d / r;
   let a    = dot(ds, ds);
   let b    = 2.0 * dot(os, ds);
   let c    = dot(os, os) - 1.0;
   let disc = b * b - 4.0 * a * c;
-
   if (disc < 0.0) { return -1.0; }
-
   let sq = sqrt(disc);
   let t1 = (-b - sq) / (2.0 * a);
   let t2 = (-b + sq) / (2.0 * a);
-
   if (t1 > EPSILON) { return t1; }
   if (t2 > EPSILON) { return t2; }
   return -1.0;
 }
 
-// ─── Depth coloring ───────────────────────────────────────────────────────────
-// smaller t → light lavender, larger t → deep purple, miss → black
-fn depthColor(uv: vec2i, t: f32) {
-  var color: vec4f;
-  if (t > 0.0) {
-    let tn      = clamp(t / 10.0, 0.0, 1.0);
-    let lavender = vec3f(0.87, 0.73, 1.0);   // light lavender
-    let dpurple  = vec3f(0.29, 0.0,  0.51);  // deep purple
-    color = vec4f(mix(lavender, dpurple, tn), 1.0);
-  } else {
-    color = vec4f(0.0, 0.0, 0.0, 1.0);       // black = no hit
+// Outward normal on the ellipsoid surface in object space.
+fn normalSphereObj(p: vec3f) -> vec3f {
+  let r = sphere.radii.xyz;
+  return normalize(p / (r * r));
+}
+
+// ─── Cube (AABB) intersection & normal ───────────────────────────────────────
+// Uses sphere.radii.xyz as half-extents.
+fn intersectCubeObj(o: vec3f, d: vec3f) -> f32 {
+  let e = sphere.radii.xyz;
+  var tNear = -1e30;
+  var tFar  =  1e30;
+
+  if (abs(d.x) > EPSILON) {
+    let t1 = (-e.x - o.x) / d.x;
+    let t2 = ( e.x - o.x) / d.x;
+    tNear = max(tNear, min(t1, t2));
+    tFar  = min(tFar,  max(t1, t2));
+  } else if (abs(o.x) >= e.x) { return -1.0; }
+
+  if (abs(d.y) > EPSILON) {
+    let t1 = (-e.y - o.y) / d.y;
+    let t2 = ( e.y - o.y) / d.y;
+    tNear = max(tNear, min(t1, t2));
+    tFar  = min(tFar,  max(t1, t2));
+  } else if (abs(o.y) >= e.y) { return -1.0; }
+
+  if (abs(d.z) > EPSILON) {
+    let t1 = (-e.z - o.z) / d.z;
+    let t2 = ( e.z - o.z) / d.z;
+    tNear = max(tNear, min(t1, t2));
+    tFar  = min(tFar,  max(t1, t2));
+  } else if (abs(o.z) >= e.z) { return -1.0; }
+
+  if (tFar < tNear || tFar < EPSILON) { return -1.0; }
+  if (tNear > EPSILON) { return tNear; }
+  return tFar;
+}
+
+fn normalCubeObj(p: vec3f) -> vec3f {
+  let e = sphere.radii.xyz;
+  let a = abs(p / e);
+  if (a.x >= a.y && a.x >= a.z) { return vec3f(sign(p.x), 0.0, 0.0); }
+  if (a.y >= a.z)                { return vec3f(0.0, sign(p.y), 0.0); }
+  return vec3f(0.0, 0.0, sign(p.z));
+}
+
+// ─── Cylinder intersection & normal ──────────────────────────────────────────
+// Aligned along Y axis: radius = radii.x, half-height = radii.y.
+fn intersectCylinderObj(o: vec3f, d: vec3f) -> f32 {
+  let r = sphere.radii.x;
+  let h = sphere.radii.y;
+  var tBest = -1.0;
+
+  let a = d.x * d.x + d.z * d.z;
+  if (a > EPSILON) {
+    let b    = 2.0 * (o.x * d.x + o.z * d.z);
+    let c    = o.x * o.x + o.z * o.z - r * r;
+    let disc = b * b - 4.0 * a * c;
+    if (disc >= 0.0) {
+      let sq = sqrt(disc);
+      let t1 = (-b - sq) / (2.0 * a);
+      let t2 = (-b + sq) / (2.0 * a);
+      if (t1 > EPSILON && abs(o.y + t1 * d.y) <= h) {
+        tBest = t1;
+      } else if (t2 > EPSILON && abs(o.y + t2 * d.y) <= h) {
+        tBest = t2;
+      }
+    }
   }
-  textureStore(outTexture, uv, color);
+
+  if (abs(d.y) > EPSILON) {
+    let tTop = ( h - o.y) / d.y;
+    if (tTop > EPSILON) {
+      let px = o.x + tTop * d.x;
+      let pz = o.z + tTop * d.z;
+      if (px * px + pz * pz <= r * r && (tBest < 0.0 || tTop < tBest)) { tBest = tTop; }
+    }
+    let tBot = (-h - o.y) / d.y;
+    if (tBot > EPSILON) {
+      let px = o.x + tBot * d.x;
+      let pz = o.z + tBot * d.z;
+      if (px * px + pz * pz <= r * r && (tBest < 0.0 || tBot < tBest)) { tBest = tBot; }
+    }
+  }
+
+  return tBest;
+}
+
+fn normalCylinderObj(p: vec3f) -> vec3f {
+  let h = sphere.radii.y;
+  if (abs(p.y - h) < 0.01) { return vec3f(0.0,  1.0, 0.0); }
+  if (abs(p.y + h) < 0.01) { return vec3f(0.0, -1.0, 0.0); }
+  return normalize(vec3f(p.x, 0.0, p.z));
+}
+
+// ─── Cone intersection & normal ───────────────────────────────────────────────
+// Apex at y = +radii.y, base at y = -radii.y, base radius = radii.x.
+fn intersectConeObj(o: vec3f, d: vec3f) -> f32 {
+  let r  = sphere.radii.x;
+  let h  = sphere.radii.y;
+  let k  = r / (2.0 * h);    // tan(half-angle)
+  let oy = o.y - h;           // shift so apex is at local origin
+  var tBest = -1.0;
+
+  let a    = d.x * d.x + d.z * d.z - k * k * d.y * d.y;
+  let b    = 2.0 * (o.x * d.x + o.z * d.z - k * k * oy * d.y);
+  let c    = o.x * o.x + o.z * o.z - k * k * oy * oy;
+
+  if (abs(a) > EPSILON) {
+    let disc = b * b - 4.0 * a * c;
+    if (disc >= 0.0) {
+      let sq = sqrt(disc);
+      let t1 = (-b - sq) / (2.0 * a);
+      let t2 = (-b + sq) / (2.0 * a);
+      let y1 = o.y + t1 * d.y;
+      let y2 = o.y + t2 * d.y;
+      if (t1 > EPSILON && y1 >= -h && y1 <= h) {
+        tBest = t1;
+      } else if (t2 > EPSILON && y2 >= -h && y2 <= h) {
+        tBest = t2;
+      }
+    }
+  }
+
+  // Base cap at y = -h
+  if (abs(d.y) > EPSILON) {
+    let tCap = (-h - o.y) / d.y;
+    if (tCap > EPSILON) {
+      let px = o.x + tCap * d.x;
+      let pz = o.z + tCap * d.z;
+      if (px * px + pz * pz <= r * r && (tBest < 0.0 || tCap < tBest)) { tBest = tCap; }
+    }
+  }
+
+  return tBest;
+}
+
+fn normalConeObj(p: vec3f) -> vec3f {
+  let h = sphere.radii.y;
+  let k = sphere.radii.x / (2.0 * h);
+  if (abs(p.y + h) < 0.01) { return vec3f(0.0, -1.0, 0.0); }
+  // Gradient of x² + z² - k²*(y-h)² = 0
+  return normalize(vec3f(p.x, -k * k * (p.y - h), p.z));
+}
+
+// ─── Trace result: world-space normal + ray parameter ─────────────────────────
+struct TraceResult {
+  normal: vec3f,  // world-space outward normal at the hit point
+  t:      f32,    // ray parameter (-1.0 = miss)
+}
+
+// ─── Dispatch the correct intersection based on shapeConf.shapeIndex ─────────
+fn traceRay(camOrig: vec3f, camDir: vec3f) -> TraceResult {
+  var res: TraceResult;
+  res.normal = vec3f(0.0, 1.0, 0.0);
+  res.t      = -1.0;
+
+  // Camera space → world space → object space
+  var o = applyMotorToPoint(camOrig, cameraPose.motor);
+  o     = applyMotorToPoint(o, reverse(sphere.motor));
+  var d = applyMotorToDir(camDir, cameraPose.motor);
+  d     = applyMotorToDir(d, reverse(sphere.motor));
+
+  var t: f32;
+  var n: vec3f;
+
+  let shape = shapeConf.shapeIndex;
+  if (shape == 0u) {
+    t = intersectSphereObj(o, d);
+    if (t > 0.0) { n = normalSphereObj(o + t * d); }
+  } else if (shape == 1u) {
+    t = intersectCubeObj(o, d);
+    if (t > 0.0) { n = normalCubeObj(o + t * d); }
+  } else if (shape == 2u) {
+    t = intersectCylinderObj(o, d);
+    if (t > 0.0) { n = normalCylinderObj(o + t * d); }
+  } else {
+    t = intersectConeObj(o, d);
+    if (t > 0.0) { n = normalConeObj(o + t * d); }
+  }
+
+  if (t > 0.0) {
+    // Rotate object-space normal into world space (rotation only, no translation)
+    res.normal = normalize(applyMotorToDir(n, sphere.motor));
+    res.t      = t;
+  }
+  return res;
+}
+
+// ─── Shaded coloring ──────────────────────────────────────────────────────────
+// Depth-based purple gradient modulated by diffuse lighting for 3-D appearance.
+// miss → black
+fn shadedColor(uv: vec2i, res: TraceResult) {
+  if (res.t <= 0.0) {
+    textureStore(outTexture, uv, vec4f(0.0, 0.0, 0.0, 1.0));
+    return;
+  }
+  let tn       = clamp(res.t / 10.0, 0.0, 1.0);
+  let lavender = vec3f(0.87, 0.73, 1.0);
+  let dpurple  = vec3f(0.29, 0.0,  0.51);
+  let baseColor = mix(lavender, dpurple, tn);
+
+  let lightDir = normalize(vec3f(1.0, 2.0, 1.0));
+  let diffuse  = max(0.0, dot(res.normal, lightDir));
+  let ambient  = 0.15;
+  let lit      = (ambient + (1.0 - ambient) * diffuse) * baseColor;
+  textureStore(outTexture, uv, vec4f(lit, 1.0));
 }
 
 // ─── Orthographic compute entry point ────────────────────────────────────────
@@ -171,15 +362,13 @@ fn computeOrthogonalMain(@builtin(global_invocation_id) global_id: vec3u) {
   let uv     = vec2i(global_id.xy);
   let texDim = vec2i(textureDimensions(outTexture));
   if (uv.x < texDim.x && uv.y < texDim.y) {
-    // Orthographic: all rays parallel to +Z, origins spread on the image plane
     let psize = vec2f(2.0, 2.0) / cameraPose.res.xy;
     let spt   = vec3f(
       (f32(uv.x) + 0.5) * psize.x - 1.0,
       (f32(uv.y) + 0.5) * psize.y - 1.0,
       0.0
     );
-    let rdir = vec3f(0.0, 0.0, 1.0);
-    depthColor(uv, raySphereIntersect(spt, rdir));
+    shadedColor(uv, traceRay(spt, vec3f(0.0, 0.0, 1.0)));
   }
 }
 
@@ -189,7 +378,6 @@ fn computeProjectiveMain(@builtin(global_invocation_id) global_id: vec3u) {
   let uv     = vec2i(global_id.xy);
   let texDim = vec2i(textureDimensions(outTexture));
   if (uv.x < texDim.x && uv.y < texDim.y) {
-    // Projective: all rays from origin, directions toward the focal plane
     let psize = vec2f(2.0, 2.0) / (cameraPose.res.xy * cameraPose.focal);
     let spt   = vec3f(0.0, 0.0, 0.0);
     let rdir  = normalize(vec3f(
@@ -197,6 +385,6 @@ fn computeProjectiveMain(@builtin(global_invocation_id) global_id: vec3u) {
       (f32(uv.y) + 0.5) * psize.y - 1.0 / cameraPose.focal.y,
       1.0
     ));
-    depthColor(uv, raySphereIntersect(spt, rdir));
+    shadedColor(uv, traceRay(spt, rdir));
   }
 }
