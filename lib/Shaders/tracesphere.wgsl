@@ -337,23 +337,54 @@ fn traceRay(camOrig: vec3f, camDir: vec3f) -> TraceResult {
 }
 
 // ─── Shaded coloring ──────────────────────────────────────────────────────────
-// Depth-based purple gradient modulated by diffuse lighting for 3-D appearance.
-// miss → black
+// Three-stop gradient: lavender (bright/close) → purple (mid) → deep blue (dark/far).
+// Combined hemisphere + directional lighting ensures every face has a distinct shade:
+//   top = lavender, lit sides = purple, unlit sides = darker purple, bottom = deep blue.
+// miss → black.
+
+// Fraction of the shade factor contributed by ray depth vs. surface lighting.
+const DEPTH_WEIGHT:    f32 = 0.3;
+const LIGHTING_WEIGHT: f32 = 0.7;
+// The shade factor is split into two equal segments for the three-stop gradient.
+const GRADIENT_MID:    f32 = 0.5;
+
 fn shadedColor(uv: vec2i, res: TraceResult) {
   if (res.t <= 0.0) {
     textureStore(outTexture, uv, vec4f(0.0, 0.0, 0.0, 1.0));
     return;
   }
-  let tn       = clamp(res.t / 10.0, 0.0, 1.0);
-  let lavender = vec3f(0.87, 0.73, 1.0);
-  let dpurple  = vec3f(0.29, 0.0,  0.51);
-  let baseColor = mix(lavender, dpurple, tn);
 
+  // Color stops from brightest to darkest.
+  let lavender = vec3f(0.87, 0.73, 1.0);
+  let purple   = vec3f(0.29, 0.0,  0.51);
+  let deepBlue = vec3f(0.0,  0.0,  0.35);
+
+  // Depth factor: 0 = close (bright), 1 = far (dark).
+  let depthFactor = clamp(res.t / 10.0, 0.0, 1.0);
+
+  // Directional light gives face-to-face variation (lit side brighter than others).
   let lightDir = normalize(vec3f(1.0, 2.0, 1.0));
   let diffuse  = max(0.0, dot(res.normal, lightDir));
-  let ambient  = 0.15;
-  let lit      = (ambient + (1.0 - ambient) * diffuse) * baseColor;
-  textureStore(outTexture, uv, vec4f(lit, 1.0));
+
+  // Hemisphere component: top = 1.0, equator = 0.5, bottom = 0.0.
+  let hemi = GRADIENT_MID + GRADIENT_MID * res.normal.y;
+
+  // Combined lighting: 1 = fully bright, 0 = fully dark.
+  let lightFactor = clamp(GRADIENT_MID * hemi + GRADIENT_MID * diffuse, 0.0, 1.0);
+
+  // shadeFactor drives the gradient: 0 = lavender end, 1 = deep blue end.
+  // Normals (LIGHTING_WEIGHT) set face-level brightness; depth (DEPTH_WEIGHT) adds variation.
+  let shadeFactor = clamp(DEPTH_WEIGHT * depthFactor + LIGHTING_WEIGHT * (1.0 - lightFactor), 0.0, 1.0);
+
+  // Two-segment gradient across three color stops.
+  var baseColor: vec3f;
+  if (shadeFactor < GRADIENT_MID) {
+    baseColor = mix(lavender, purple,   shadeFactor / GRADIENT_MID);
+  } else {
+    baseColor = mix(purple,   deepBlue, (shadeFactor - GRADIENT_MID) / GRADIENT_MID);
+  }
+
+  textureStore(outTexture, uv, vec4f(baseColor, 1.0));
 }
 
 // ─── Orthographic compute entry point ────────────────────────────────────────
