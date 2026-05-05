@@ -115,7 +115,7 @@ async function init() {
 
   const titleEl = document.createElement('div');
   titleEl.className   = 'hud-title';
-  titleEl.textContent = 'Ray-Traced Shapes — Project 6';
+  titleEl.textContent = 'Project 6';
   hud.appendChild(titleEl);
 
   // CAMERA MOVEMENT
