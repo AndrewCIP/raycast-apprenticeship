@@ -243,11 +243,25 @@ fn falseColor(t: f32) -> vec3f {
   return vec3f(r, g, b);
 }
 
+// ── Color transfer function ───────────────────────────────────────────────────
+//
+// Maps a normalised intensity [0, 1] to a pinkish-red hue for dense tissue,
+// blending toward a dim light-blue for sparse regions to simulate cool ambient
+// lighting.  Used by both the MIP and DRR renderers.
+
+fn volumeColor(intensity: f32) -> vec3f {
+  let t         = clamp(intensity, 0.0, 1.0);
+  let coolColor = vec3f(0.45, 0.70, 1.00); // light blue  — ambient / shadow
+  let warmColor = vec3f(1.00, 0.25, 0.38); // pinkish-red — dense tissue
+  return mix(coolColor * 0.12, warmColor, t);
+}
+
 // ── Part 2: Maximum Intensity Projection (MIP) ──────────────────────────────
 //
 // Walk along the ray and record the highest voxel value encountered.  Map
-// that maximum to a grayscale intensity in [0, 1].  The brain dataset stores
-// values in a 12-bit range (0–4095), so we normalise by 4095.
+// that maximum to a pinkish-red intensity using the volumeColor transfer
+// function (light-blue ambient → pinkish-red for peak density).  The brain
+// dataset stores values in a 12-bit range (0–4095), so we normalise by 4095.
 
 fn traceSceneMIP(uv: vec2i, p: vec3f, d: vec3f) {
   let hits = resolveHits(rayVolumeIntersection(p, d));
@@ -262,7 +276,7 @@ fn traceSceneMIP(uv: vec2i, p: vec3f, d: vec3f) {
   }
 
   let intensity = maxVal / 4095.0;
-  textureStore(outTexture, uv, vec4f(intensity, intensity, intensity, 1.0));
+  textureStore(outTexture, uv, vec4f(volumeColor(intensity), 1.0));
 }
 
 // ── Part 3: Digitally Reconstructed Radiograph (DRR) ───────────────────────
@@ -293,7 +307,7 @@ fn traceSceneDRR(uv: vec2i, p: vec3f, d: vec3f) {
   }
 
   let intensity = 1.0 - transmittance;
-  textureStore(outTexture, uv, vec4f(intensity, intensity, intensity, 1.0));
+  textureStore(outTexture, uv, vec4f(volumeColor(intensity), 1.0));
 }
 
 // ── Part 4: Depth-based false-color encoding ─────────────────────────────────
