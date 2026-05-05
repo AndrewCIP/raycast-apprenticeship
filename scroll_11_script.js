@@ -300,7 +300,7 @@ init().then(ret => {
   console.log(ret);
 }).catch(error => {
   const pTag = document.createElement('p');
-  pTag.innerHTML = navigator.userAgent + '</br>' + error.message;
+  pTag.innerHTML = navigator.userAgent + '<br>' + error.message;
   document.body.appendChild(pTag);
   const canvas = document.getElementById('renderCanvas');
   if (canvas) canvas.remove();
