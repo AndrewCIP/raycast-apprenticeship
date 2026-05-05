@@ -401,7 +401,24 @@ fn computeOrthogonalMain(@builtin(global_invocation_id) global_id: vec3u) {
 @compute
 @workgroup_size(16, 16)
 fn computeProjectiveMain(@builtin(global_invocation_id) global_id: vec3u) {
-  // TODO: copy your code of quest 6 here
-  // This should be very similar to the orthogonal one above
-  
+  // Projective (pinhole) camera: rays originate from a single point and fan
+  // outward through each pixel, creating a perspective projection.
+  let uv = vec2i(global_id.xy);
+  let texDim = vec2i(textureDimensions(outTexture));
+  if (uv.x < texDim.x && uv.y < texDim.y) {
+    // Pixel size scaled by focal length to control field of view
+    let psize = vec2f(2.0, 2.0) / (cameraPose.res.xy * cameraPose.focal);
+    // Ray starts at camera origin; direction passes through the pixel center
+    var spt  = vec3f(0.0, 0.0, 0.0);
+    var rdir = normalize(vec3f(
+      (f32(uv.x) + 0.5) * psize.x - 1.0 / cameraPose.focal.x,
+      (f32(uv.y) + 0.5) * psize.y - 1.0 / cameraPose.focal.y,
+      1.0
+    ));
+    // Apply camera pose transformation
+    spt  = transformPt(spt);
+    rdir = transformDir(rdir);
+    // Trace the scene
+    traceScene(uv, spt, rdir);
+  }
 }
