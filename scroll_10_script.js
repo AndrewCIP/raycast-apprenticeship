@@ -23,6 +23,103 @@ async function init() {
   const moveStep = 0.05;
   const rotStep = Math.PI / 36; // 5 degrees
 
+  // ─── HUD ─────────────────────────────────────────────────────────────────
+
+  // Helpers
+  function addKey(parent, label) {
+    const btn = document.createElement('span');
+    btn.className = 'hud-button';
+    btn.textContent = label;
+    parent.appendChild(btn);
+  }
+
+  function addRow(parent, labelText, keys, liveEl) {
+    const row = document.createElement('div');
+    row.className = 'hud-control-row';
+    const lbl = document.createElement('span');
+    lbl.className = 'hud-label';
+    lbl.textContent = labelText;
+    row.appendChild(lbl);
+    for (const k of keys) { addKey(row, k); }
+    if (liveEl) { row.appendChild(liveEl); }
+    parent.appendChild(row);
+  }
+
+  function addSection(hud, title) {
+    const sec = document.createElement('div');
+    sec.className = 'hud-section';
+    const hdr = document.createElement('div');
+    hdr.className = 'hud-section-header';
+    hdr.textContent = title;
+    sec.appendChild(hdr);
+    hud.appendChild(sec);
+    return sec;
+  }
+
+  // Build the HUD panel
+  const hud = document.createElement('div');
+  hud.id = 'hud';
+
+  const title = document.createElement('div');
+  title.className = 'hud-title';
+  title.textContent = 'Ray-Traced Box — Scroll 10';
+  hud.appendChild(title);
+
+  // MOVEMENT
+  const movSec = addSection(hud, 'MOVEMENT');
+  addRow(movSec, 'Move Forward / Back', ['W', 'S']);
+  addRow(movSec, 'Move Left / Right',   ['A', 'D']);
+  addRow(movSec, 'Move Up / Down',      ['Q', 'E']);
+
+  // ROTATION
+  const rotSec = addSection(hud, 'ROTATION');
+  addRow(rotSec, 'Pitch (X-axis)', ['↑', '↓']);
+  addRow(rotSec, 'Yaw (Y-axis)',   ['←', '→']);
+  addRow(rotSec, 'Roll (Z-axis)',  ['Z', 'X']);
+
+  // CAMERA
+  const camSec = addSection(hud, 'CAMERA');
+
+  const hudModeEl = document.createElement('span');
+  hudModeEl.className = 'hud-value';
+  addRow(camSec, 'Toggle Projective / Orthographic', ['P'], hudModeEl);
+
+  const hudFocalEl = document.createElement('span');
+  hudFocalEl.className = 'hud-value';
+  addRow(camSec, 'Focal Length', ['+', '-'], hudFocalEl);
+
+  addRow(camSec, 'Reset Pose', ['R']);
+
+  // INFO
+  const info = document.createElement('div');
+  info.className = 'hud-info';
+  info.textContent = 'H — Hide / Show HUD';
+  hud.appendChild(info);
+
+  document.body.appendChild(hud);
+
+  // Show-HUD button (visible only when HUD is hidden)
+  const showBtn = document.createElement('button');
+  showBtn.id = 'show-hud-toggle';
+  showBtn.textContent = 'Show HUD';
+  showBtn.addEventListener('click', () => {
+    hud.style.display = '';
+    showBtn.style.display = 'none';
+  });
+  document.body.appendChild(showBtn);
+
+  // Live-value helpers
+  function updateHudMode() {
+    hudModeEl.textContent = camera._isProjective ? 'Projective' : 'Orthographic';
+  }
+  function updateHudFocal() {
+    hudFocalEl.textContent = camera._focal[0].toFixed(1);
+  }
+  updateHudMode();
+  updateHudFocal();
+
+  // ─────────────────────────────────────────────────────────────────────────
+
   // Keyboard interaction for camera control
   window.addEventListener('keydown', (e) => {
     switch (e.key) {
@@ -45,6 +142,7 @@ async function init() {
       // Toggle between orthogonal and projective camera
       case 'p':
         camera._isProjective = !camera._isProjective;
+        updateHudMode();
         console.log('Projective mode:', camera._isProjective);
         break;
 
@@ -59,14 +157,28 @@ async function init() {
         camera._focal[0] += 0.1;
         camera._focal[1] += 0.1;
         rayBox.updateCameraFocal();
+        updateHudFocal();
         console.log('Focal:', camera._focal[0].toFixed(2));
         break;
       case '-':
         camera._focal[0] = Math.max(0.1, camera._focal[0] - 0.1);
         camera._focal[1] = Math.max(0.1, camera._focal[1] - 0.1);
         rayBox.updateCameraFocal();
+        updateHudFocal();
         console.log('Focal:', camera._focal[0].toFixed(2));
         break;
+
+      // Toggle HUD visibility
+      case 'h':
+      case 'H':
+        if (hud.style.display === 'none') {
+          hud.style.display = '';
+          showBtn.style.display = 'none';
+        } else {
+          hud.style.display = 'none';
+          showBtn.style.display = '';
+        }
+        return; // no camera update needed
 
       default: return;
     }
