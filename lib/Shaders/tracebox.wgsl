@@ -440,7 +440,7 @@ fn computeProjectiveMain(@builtin(global_invocation_id) global_id: vec3u) {
     // projective camera ray: all rays start from the origin (0,0,0)
     var spt = vec3f(0, 0, 0);
     // ray direction goes from origin toward the pixel center on the image plane at z = 1
-    // subtract focal length (half the image plane span) to center the image
+    // divide by focal length to convert from focal-space to normalized device coordinates
     var rdir = normalize(vec3f(
       (f32(uv.x) + 0.5) * psize.x - 1.0 / cameraPose.focal.x,
       (f32(uv.y) + 0.5) * psize.y - 1.0 / cameraPose.focal.y,

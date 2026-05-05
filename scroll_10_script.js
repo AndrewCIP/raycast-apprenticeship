@@ -34,7 +34,7 @@ async function init() {
       case 'q': camera.moveY(moveStep);  break;
       case 'e': camera.moveY(-moveStep); break;
 
-      // Rotation controls (arrow keys for X/Y, Z/X for Z axis)
+      // Rotation controls (arrow keys for X/Y pitch/yaw, letter keys z/x for Z-axis roll)
       case 'ArrowUp':    camera.rotateX(-rotStep); break;
       case 'ArrowDown':  camera.rotateX(rotStep);  break;
       case 'ArrowLeft':  camera.rotateY(-rotStep); break;
