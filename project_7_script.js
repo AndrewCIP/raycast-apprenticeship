@@ -1,4 +1,9 @@
 /*
+ * Copyright (c) 2026 Andrew Cip @ University of the Pacific.
+ *
+ * Built on course framework copyright (c) 2026 Sing Chun LEE @ Bucknell University.
+ * Licensed under CC BY-NC 4.0 — https://creativecommons.org/licenses/by-nc/4.0/
+ *
  * Project 7 — Comprehensive Volume Rendering Demo
  *
  * Features implemented:
@@ -374,7 +379,7 @@ class Project7Object extends VolumeRenderingObject {
     // ── 2. Procedural datasets ────────────────────────────────────────────
     const sphere   = new ProceduralSphereData();
     const grass    = new BiasedTerrainData( 0.00); // neutral — mostly grass
-    const snow     = new BiasedTerrainData( 0.28); // shifted up — snow/stone
+    const snow     = new BiasedTerrainData( 0.28); // shifted up   — snow/stone
     const water    = new BiasedTerrainData(-0.28); // shifted down — ocean
     const dirt     = new BiasedTerrainData( 0.15); // slightly high — dirt/rock
     const cloud    = new CloudData();
