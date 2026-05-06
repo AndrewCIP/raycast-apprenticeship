@@ -707,8 +707,10 @@ fn computeColor(rayOrig0: vec3f, rayDir0: vec3f, uv: vec2i) -> vec4f {
       // refract() requires the normal on the incident side, which is hit.n
       let refracted = refract(rayDir, hit.n, eta);
 
+      // refract() returns the zero vector when total internal reflection occurs.
+      // Checking length² < 0.5 reliably detects the zero-vector case on f32.
       if (dot(refracted, refracted) < 0.5) {
-        // Total internal reflection
+        // Total internal reflection — treat as a perfect mirror bounce
         rayDir  = reflect(rayDir, hit.n);
         rayOrig = hit.p + hit.n * 0.004;
       } else {

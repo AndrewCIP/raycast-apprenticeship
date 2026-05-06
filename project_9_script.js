@@ -284,7 +284,7 @@ async function init() {
   const hudShadowModeEl = liveEl();
   addRow(shadowSec, 'Cycle Shadow Mode', ['K'], hudShadowModeEl);
   const hudTranspEl = liveEl();
-  addRow(shadowSec, 'Transparent Shadow (glass)', ['T'], hudTranspEl);
+  addRow(shadowSec, 'Glass Casts Transparent Shadow', ['T'], hudTranspEl);
 
   // Reflections
   const reflSec = addSection(hud, 'REFLECTIONS');
