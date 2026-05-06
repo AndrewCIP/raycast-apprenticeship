@@ -525,23 +525,6 @@ class Project7Object extends VolumeRenderingObject {
 // ── HUD construction ──────────────────────────────────────────────────────────
 
 function buildHUD() {
-  // Loading overlay — shown while volumes are being generated.
-  const overlayStyle = document.createElement('style');
-  overlayStyle.textContent = `
-    #loading-overlay {
-      position: fixed; inset: 0; display: flex; align-items: center;
-      justify-content: center; background: #000;
-      color: #7af; font: bold 20px 'Courier New', monospace;
-      z-index: 200; transition: opacity 0.5s;
-    }
-  `;
-  document.head.appendChild(overlayStyle);
-
-  const overlay = document.createElement('div');
-  overlay.id = 'loading-overlay';
-  overlay.textContent = '⏳  Generating volumes… please wait';
-  document.body.appendChild(overlay);
-
   // ── HUD helpers ──────────────────────────────────────────────────────────
   function addKey(parent, label) {
     const btn = document.createElement('span');
@@ -632,7 +615,7 @@ function buildHUD() {
   });
   document.body.appendChild(showBtn);
 
-  return { overlay, hud, showBtn };
+  return { hud, showBtn };
 }
 
 function updateHUD(sceneIdx, camera) {
@@ -673,7 +656,7 @@ async function main() {
   canvas.id = 'renderCanvas';
   document.body.appendChild(canvas);
 
-  const { overlay, hud, showBtn } = buildHUD();
+  const { hud, showBtn } = buildHUD();
 
   // Renderer + camera
   const renderer = new RayTracer(canvas);
@@ -695,10 +678,6 @@ async function main() {
   // Initialise (loads brain data + generates all procedural volumes).
   await renderer.setTracerObject(volObj);
   volObj._activeScene = 0;
-
-  // Hide loading overlay
-  overlay.style.opacity = '0';
-  setTimeout(() => overlay.remove(), 600);
 
   // ── Scene switching ──────────────────────────────────────────────────────
 
