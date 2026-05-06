@@ -357,7 +357,7 @@ fn shadeSurface(
     let ka           = vec4f(0.1, 0.1, 0.1, 0.0);      // ambient material
     return emit + diffuseCol * I * diffuseTerm
                 + ks * I * specularTerm
-                + ka * I;
+                + ka * diffuseCol * I;
 
   } else if (shadingModel == 2) {
     // ── Toon shading ───────────────────────────────────────────────────────
@@ -371,7 +371,7 @@ fn shadeSurface(
     let qSpec        = toonQuantize(specularTerm);
     return emit + diffuseCol * I * qDiff
                 + ks * I * qSpec
-                + ka * I;
+                + ka * diffuseCol * I;
 
   } else {
     // ── Lambertian reflection (default) ────────────────────────────────────
