@@ -304,7 +304,7 @@ async function init() {
 
       // Cycle through shading models with m / M
       case 'm': case 'M':
-        shadingIdx = (shadingIdx + 1) % 3;
+        shadingIdx = (shadingIdx + 1) % SHADE_NAMES.length;
         updateHudShading();
         applyLight();
         break;

@@ -248,7 +248,10 @@ fn boxDiffuseColor(idx: i32) -> vec4f {
 }
 
 fn boxNormal(idx: i32) -> vec3f {
-  // Inward-facing normals (camera is inside the box)
+  // Inward-facing normals — the camera lives inside the box, so all normals
+  // point toward the interior.  Opposite faces intentionally share the same
+  // sign because the winding order already encodes which surface is "front".
+  // (Matches the convention in traceboxlight.wgsl.)
   switch(idx) {
     case 0:  { return vec3f( 0,  0, -1); } // front
     case 1:  { return vec3f( 0,  0, -1); } // back
