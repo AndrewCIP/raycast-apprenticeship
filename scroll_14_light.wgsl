@@ -278,6 +278,9 @@ fn boxNormal(idx: i32) -> vec3f {
   }
 }
 
+// Index of the bottom (floor) face in the UnitCube face array.
+const FACE_FLOOR: i32 = 5;
+
 // ── Part 1 & 2: UV mapping and bump helpers ───────────────────────────────────
 //
 // UV coordinates for each box face in local space, tiled by the caller.
@@ -440,7 +443,7 @@ fn shadeHit(spt: vec3f, rdir: vec3f, hitInfo: vec2f) -> vec4f {
   // ── Part 3: Environment mapping ─────────────────────────────────────────────
   // When the cube map is on, colour all faces that are NOT covered by the stone
   // texture (i.e., non-floor faces, or the floor when texture is also off).
-  if (texFlags.showCubeMap != 0u && (texFlags.showTexture == 0u || faceIdx != 5)) {
+  if (texFlags.showCubeMap != 0u && (texFlags.showTexture == 0u || faceIdx != FACE_FLOOR)) {
     return textureSampleLevel(envMap, texSampler, worldRdir, 0.0);
   }
 
@@ -452,7 +455,7 @@ fn shadeHit(spt: vec3f, rdir: vec3f, hitInfo: vec2f) -> vec4f {
   // Modulate diffuse colour with the stone texture on the floor face.
   // Other faces retain their Phong material colour.
   var diffuseCol = boxDiffuseColor(faceIdx);
-  if (texFlags.showTexture != 0u && faceIdx == 5) {
+  if (texFlags.showTexture != 0u && faceIdx == FACE_FLOOR) {
     diffuseCol = textureSampleLevel(floorTex, texSampler, faceUV, 0.0);
   }
 
