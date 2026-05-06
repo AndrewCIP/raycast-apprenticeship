@@ -29,7 +29,7 @@ import rjsmin
 def combineContent(file, curDir, imported):
   if file in imported: return r'' # already imported
   imported.add(file)
-  with open(curDir + '/' + file, 'r') as file:
+  with open(curDir + '/' + file, 'r', encoding='utf-8') as file:
     content = file.read()
   # import files
   pattern = r'(import +.*? +from +[\'"](.*?)[\'"]\s*)'
@@ -53,7 +53,7 @@ def main():
     matches = re.findall(pattern, content)
     for oldText in matches:
       content = content.replace(oldText, os.path.dirname(oldText) + "/optimized_" + os.path.basename(oldText))
-    with open(os.path.splitext(os.path.basename(sys.argv[1]))[0] + "-full.js", 'w') as file:
+    with open(os.path.splitext(os.path.basename(sys.argv[1]))[0] + "-full.js", 'w', encoding='utf-8') as file:
       file.write(rjsmin.jsmin(content))
     
 if __name__ == "__main__":
