@@ -525,20 +525,9 @@ class Project7Object extends VolumeRenderingObject {
 // ── HUD construction ──────────────────────────────────────────────────────────
 
 function buildHUD() {
-  const style = document.createElement('style');
-  style.textContent = `
-    body { margin: 0; overflow: hidden; background: #000; }
-    canvas { display: block; width: 100vw; height: 100vh; }
-    #hud {
-      position: fixed; top: 0; left: 0; right: 0;
-      background: rgba(0,0,0,0.65); color: #eee;
-      font: 13px/1.6 'Courier New', monospace;
-      padding: 8px 14px; user-select: none;
-      display: flex; flex-wrap: wrap; gap: 6px 22px;
-      z-index: 100; pointer-events: none;
-    }
-    #hud b { color: #7af; }
-    #scene-name { font-size: 15px; font-weight: bold; color: #fc8; width: 100%; }
+  // Loading overlay — shown while volumes are being generated.
+  const overlayStyle = document.createElement('style');
+  overlayStyle.textContent = `
     #loading-overlay {
       position: fixed; inset: 0; display: flex; align-items: center;
       justify-content: center; background: #000;
@@ -546,44 +535,116 @@ function buildHUD() {
       z-index: 200; transition: opacity 0.5s;
     }
   `;
-  document.head.appendChild(style);
+  document.head.appendChild(overlayStyle);
 
   const overlay = document.createElement('div');
   overlay.id = 'loading-overlay';
   overlay.textContent = '⏳  Generating volumes… please wait';
   document.body.appendChild(overlay);
 
+  // ── HUD helpers ──────────────────────────────────────────────────────────
+  function addKey(parent, label) {
+    const btn = document.createElement('span');
+    btn.className   = 'hud-button';
+    btn.textContent = label;
+    parent.appendChild(btn);
+  }
+
+  function addRow(parent, labelText, keys, liveEl) {
+    const row = document.createElement('div');
+    row.className = 'hud-control-row';
+    const lbl = document.createElement('span');
+    lbl.className   = 'hud-label';
+    lbl.textContent = labelText;
+    row.appendChild(lbl);
+    for (const k of keys) { addKey(row, k); }
+    if (liveEl) { row.appendChild(liveEl); }
+    parent.appendChild(row);
+  }
+
+  function addSection(hud, title) {
+    const sec = document.createElement('div');
+    sec.className = 'hud-section';
+    const hdr = document.createElement('div');
+    hdr.className   = 'hud-section-header';
+    hdr.textContent = title;
+    sec.appendChild(hdr);
+    hud.appendChild(sec);
+    return sec;
+  }
+
+  // ── Build the HUD panel ──────────────────────────────────────────────────
   const hud = document.createElement('div');
   hud.id = 'hud';
-  hud.innerHTML = `
-    <div id="scene-name">Scene 1 / ${SCENES.length}: —</div>
-    <div><b>Tab</b>/Shift+Tab — next/prev scene</div>
-    <div><b>1–9, 0</b> — jump to scene</div>
-    <div><b>P</b> – ortho ↔ projective</div>
-    <div><b>+/-</b> focal length</div>
-    <div><b>WASD Q/E</b> – move</div>
-    <div><b>Arrows Z/X</b> – rotate</div>
-    <div><b>R</b> – reset camera</div>
-    <div>Camera: <span id="cam-mode">Orthographic</span></div>
-    <div id="focal-line" style="display:none">Focal: <span id="focal-val">—</span></div>
-  `;
+
+  const titleEl = document.createElement('div');
+  titleEl.className   = 'hud-title';
+  titleEl.textContent = 'Project 7 — Volume Rendering';
+  hud.appendChild(titleEl);
+
+  // SCENE NAVIGATION
+  const sceneSec = addSection(hud, 'SCENE NAVIGATION');
+  addRow(sceneSec, 'Next / Prev Scene', ['Tab', 'Shift+Tab']);
+  addRow(sceneSec, 'Jump to Scene',     ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']);
+  const hudSceneEl = document.createElement('span');
+  hudSceneEl.id        = 'scene-name';
+  hudSceneEl.className = 'hud-value hud-value--truncated';
+  addRow(sceneSec, 'Active Scene', [], hudSceneEl);
+
+  // CAMERA
+  const camSec = addSection(hud, 'CAMERA');
+  const hudCamModeEl = document.createElement('span');
+  hudCamModeEl.id        = 'cam-mode';
+  hudCamModeEl.className = 'hud-value';
+  addRow(camSec, 'Toggle Ortho / Projective', ['P'], hudCamModeEl);
+  const hudFocalEl = document.createElement('span');
+  hudFocalEl.id        = 'focal-val';
+  hudFocalEl.className = 'hud-value';
+  addRow(camSec, 'Focal Length', ['+', '-'], hudFocalEl);
+  addRow(camSec, 'Reset Camera', ['R']);
+
+  // CAMERA MOVEMENT
+  const movSec = addSection(hud, 'CAMERA MOVEMENT');
+  addRow(movSec, 'Move Forward / Back', ['W', 'S']);
+  addRow(movSec, 'Move Left / Right',   ['A', 'D']);
+  addRow(movSec, 'Move Up / Down',      ['Q', 'E']);
+
+  // CAMERA ROTATION
+  const rotSec = addSection(hud, 'CAMERA ROTATION');
+  addRow(rotSec, 'Pitch (X-axis)', ['↑', '↓']);
+  addRow(rotSec, 'Yaw (Y-axis)',   ['←', '→']);
+  addRow(rotSec, 'Roll (Z-axis)',  ['Z', 'X']);
+
+  const info = document.createElement('div');
+  info.className   = 'hud-info';
+  info.textContent = 'H — Hide / Show HUD';
+  hud.appendChild(info);
+
   document.body.appendChild(hud);
 
-  return overlay;
+  // Show-HUD button (visible only when HUD is hidden)
+  const showBtn = document.createElement('button');
+  showBtn.id          = 'show-hud-toggle';
+  showBtn.textContent = 'Show HUD';
+  showBtn.addEventListener('click', () => {
+    hud.style.display     = '';
+    showBtn.style.display = 'none';
+  });
+  document.body.appendChild(showBtn);
+
+  return { overlay, hud, showBtn };
 }
 
 function updateHUD(sceneIdx, camera) {
   const nameEl  = document.getElementById('scene-name');
   const camEl   = document.getElementById('cam-mode');
   const focalEl = document.getElementById('focal-val');
-  const fLine   = document.getElementById('focal-line');
 
-  if (nameEl) nameEl.textContent =
+  if (nameEl)  nameEl.textContent  =
     `Scene ${sceneIdx + 1} / ${SCENES.length}: ${SCENES[sceneIdx].name}`;
-  if (camEl)  camEl.textContent  = camera._isProjective ? 'Projective (Pinhole)' : 'Orthographic';
+  if (camEl)   camEl.textContent   = camera._isProjective ? 'Projective' : 'Orthographic';
   if (focalEl) focalEl.textContent = camera._isProjective
-    ? `${camera._focal[0].toFixed(2)}` : '—';
-  if (fLine)  fLine.style.display = camera._isProjective ? '' : 'none';
+    ? camera._focal[0].toFixed(2) : '—';
 }
 
 // ── Camera reset helper ───────────────────────────────────────────────────────
@@ -609,9 +670,10 @@ function resetCamera(camera, sceneIdx) {
 async function main() {
   // Canvas
   const canvas = document.createElement('canvas');
+  canvas.id = 'renderCanvas';
   document.body.appendChild(canvas);
 
-  const overlay = buildHUD();
+  const { overlay, hud, showBtn } = buildHUD();
 
   // Renderer + camera
   const renderer = new RayTracer(canvas);
@@ -702,6 +764,16 @@ async function main() {
         volObj.updateCameraPose();
         volObj.updateCameraFocal();
         updateHUD(volObj._activeScene, camera);
+        break;
+
+      case 'h': case 'H':
+        if (hud.style.display === 'none') {
+          hud.style.display     = '';
+          showBtn.style.display = 'none';
+        } else {
+          hud.style.display     = 'none';
+          showBtn.style.display = '';
+        }
         break;
     }
   });
