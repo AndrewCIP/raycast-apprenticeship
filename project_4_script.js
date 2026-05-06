@@ -115,6 +115,16 @@ async function init() {
     if (['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)) {
       e.preventDefault(); // prevent page scroll
     }
+    if (e.key === 'h' || e.key === 'H') {
+      if (hud.style.display === 'none') {
+        hud.style.display     = '';
+        showBtn.style.display = 'none';
+      } else {
+        hud.style.display     = 'none';
+        showBtn.style.display = '';
+      }
+      return;
+    }
     keysDown.add(e.key);
     updateWind();
   });
@@ -124,20 +134,68 @@ async function init() {
   });
 
   // ----------------------------------------------------------------
-  // On-screen help overlay
+  // On-screen HUD panel
   // ----------------------------------------------------------------
-  const helpEl = document.createElement('div');
-  helpEl.style.cssText = [
-    'position:fixed', 'bottom:16px', 'left:16px',
-    'color:rgba(255,255,255,0.65)', 'font:13px/1.6 monospace',
-    'pointer-events:none', 'user-select:none',
-    'text-shadow:0 0 6px #000',
-  ].join(';');
-  helpEl.innerHTML = [
-    '<b>Fireworks</b>: click anywhere to move burst origin',
-    '<b>Nebula</b>: hold mouse to attract dust · arrow keys = wind',
-  ].join('<br>');
-  document.body.appendChild(helpEl);
+  const hud = document.createElement('div');
+  hud.id = 'hud';
+
+  const titleEl = document.createElement('div');
+  titleEl.className   = 'hud-title';
+  titleEl.textContent = 'Project 4 — Particle System';
+  hud.appendChild(titleEl);
+
+  function addKey(parent, label) {
+    const btn = document.createElement('span');
+    btn.className   = 'hud-button';
+    btn.textContent = label;
+    parent.appendChild(btn);
+  }
+
+  function addRow(parent, labelText, keys) {
+    const row = document.createElement('div');
+    row.className = 'hud-control-row';
+    const lbl = document.createElement('span');
+    lbl.className   = 'hud-label';
+    lbl.textContent = labelText;
+    row.appendChild(lbl);
+    for (const k of keys) { addKey(row, k); }
+    parent.appendChild(row);
+  }
+
+  function addSection(title) {
+    const sec = document.createElement('div');
+    sec.className = 'hud-section';
+    const hdr = document.createElement('div');
+    hdr.className   = 'hud-section-header';
+    hdr.textContent = title;
+    sec.appendChild(hdr);
+    hud.appendChild(sec);
+    return sec;
+  }
+
+  const fwSec = addSection('FIREWORKS');
+  addRow(fwSec, 'Move Burst Origin', ['click']);
+
+  const nebSec = addSection('NEBULA');
+  addRow(nebSec, 'Attract Dust', ['hold mouse']);
+  addRow(nebSec, 'Wind Direction', ['←', '→', '↑', '↓']);
+
+  const info = document.createElement('div');
+  info.className   = 'hud-info';
+  info.textContent = 'H — Hide / Show HUD';
+  hud.appendChild(info);
+
+  document.body.appendChild(hud);
+
+  // Show-HUD button (visible only when HUD is hidden)
+  const showBtn = document.createElement('button');
+  showBtn.id          = 'show-hud-toggle';
+  showBtn.textContent = 'Show HUD';
+  showBtn.addEventListener('click', () => {
+    hud.style.display     = '';
+    showBtn.style.display = 'none';
+  });
+  document.body.appendChild(showBtn);
 
   // ----------------------------------------------------------------
   // Animation loop
