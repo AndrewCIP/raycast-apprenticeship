@@ -142,8 +142,10 @@ async function init() {
 
   // NOISE INFO
   const noiseSec = addSection(hud, 'PROCEDURAL GENERATION');
-  addRow(noiseSec, 'Heightmap', ['noise2D', '+', 'fBm']);
-  addRow(noiseSec, 'Caves',     ['noise3D']);
+  const noiseInfo = document.createElement('div');
+  noiseInfo.className   = 'hud-info';
+  noiseInfo.textContent = 'Heightmap: noise2D + fBm  |  Caves: noise3D';
+  noiseSec.appendChild(noiseInfo);
 
   // Bottom hint
   const info = document.createElement('div');
