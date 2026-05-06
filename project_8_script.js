@@ -196,9 +196,9 @@ async function loadCubeMapTexture(device, faceUrls) {
 class RayBoxProject8Object extends RayBoxLightObject {
   constructor(device, canvasFormat, camera, shaderFile) {
     super(device, canvasFormat, camera, shaderFile);
-    this._showTexture = true;
+    this._showTexture = false;
     this._showBump    = false;
-    this._showCubeMap = true;
+    this._showCubeMap = false;
     this._showProc    = false;
   }
 

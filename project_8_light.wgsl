@@ -298,7 +298,231 @@ fn boxNormal(idx: i32) -> vec3f {
 // Index of the floor (bottom) face.
 const FACE_FLOOR: i32 = 5;
 
-// UV coordinates in [0,1] for each box face in local-box space.
+// ── Shape indices (faceIdx values ≥ 6 indicate shapes, not box faces) ────────
+const SHAPE_SPHERE   : i32 = 6;
+const SHAPE_CYLINDER : i32 = 7;
+const SHAPE_CONE     : i32 = 8;
+const SHAPE_CUBE     : i32 = 9;
+
+// ── Shape geometry constants (local box space: each axis in [-0.5, 0.5]) ─────
+//
+// Sphere — back-left corner
+const SPHERE_CENTER : vec3f = vec3f(-0.35, -0.40, -0.35);
+const SPHERE_RADIUS : f32   = 0.10;
+
+// Cylinder (Y-axis-aligned) — front-left corner
+const CYL_CX     : f32 = -0.35;
+const CYL_CZ     : f32 =  0.35;
+const CYL_YMIN   : f32 = -0.50;
+const CYL_YMAX   : f32 = -0.22;
+const CYL_RADIUS : f32 =  0.09;
+
+// Cone (apex up, base down) — back-right corner
+const CONE_CX      : f32 =  0.35;
+const CONE_CZ      : f32 = -0.35;
+const CONE_YAPEX   : f32 = -0.22;   // top (apex)
+const CONE_YBASE   : f32 = -0.50;   // bottom (base on floor)
+const CONE_BRADIUS : f32 =  0.11;   // radius at the base
+
+// Small AABB cube — front-right corner
+const SCUBE_MIN : vec3f = vec3f( 0.24, -0.50,  0.24);
+const SCUBE_MAX : vec3f = vec3f( 0.46, -0.22,  0.46);
+
+// ── Shape diffuse colours ─────────────────────────────────────────────────────
+fn shapeDiffuseColor(shapeIdx: i32) -> vec4f {
+  switch(shapeIdx) {
+    case SHAPE_SPHERE:   { return vec4f(0.80, 0.60, 0.10, 1.0); } // gold
+    case SHAPE_CYLINDER: { return vec4f(0.10, 0.25, 0.80, 1.0); } // blue
+    case SHAPE_CONE:     { return vec4f(0.10, 0.70, 0.20, 1.0); } // green
+    case SHAPE_CUBE:     { return vec4f(0.80, 0.20, 0.10, 1.0); } // red
+    default:             { return vec4f(0.50, 0.50, 0.50, 1.0); }
+  }
+}
+
+// ── Shape normals (computed from hit point in local-box space) ────────────────
+fn cylinderNormal(localHit: vec3f) -> vec3f {
+  let eps = 0.003;
+  if (abs(localHit.y - CYL_YMAX) < eps) { return vec3f(0,  1, 0); } // top cap
+  if (abs(localHit.y - CYL_YMIN) < eps) { return vec3f(0, -1, 0); } // bottom cap
+  return normalize(vec3f(localHit.x - CYL_CX, 0.0, localHit.z - CYL_CZ));
+}
+
+fn coneNormal(localHit: vec3f) -> vec3f {
+  let eps = 0.003;
+  if (abs(localHit.y - CONE_YBASE) < eps) { return vec3f(0, -1, 0); } // base disc
+  let dx    = localHit.x - CONE_CX;
+  let dz    = localHit.z - CONE_CZ;
+  let slope = CONE_BRADIUS / (CONE_YAPEX - CONE_YBASE);
+  return normalize(vec3f(dx, slope * slope * (CONE_YAPEX - localHit.y), dz));
+}
+
+fn aabbNormal(localHit: vec3f) -> vec3f {
+  let eps = 0.003;
+  if (abs(localHit.x - SCUBE_MIN.x) < eps) { return vec3f(-1,  0,  0); }
+  if (abs(localHit.x - SCUBE_MAX.x) < eps) { return vec3f( 1,  0,  0); }
+  if (abs(localHit.y - SCUBE_MIN.y) < eps) { return vec3f( 0, -1,  0); }
+  if (abs(localHit.y - SCUBE_MAX.y) < eps) { return vec3f( 0,  1,  0); }
+  if (abs(localHit.z - SCUBE_MIN.z) < eps) { return vec3f( 0,  0, -1); }
+  return vec3f(0, 0, 1);
+}
+
+fn shapeNormal(shapeIdx: i32, localHit: vec3f) -> vec3f {
+  switch(shapeIdx) {
+    case SHAPE_SPHERE:   { return normalize(localHit - SPHERE_CENTER); }
+    case SHAPE_CYLINDER: { return cylinderNormal(localHit); }
+    case SHAPE_CONE:     { return coneNormal(localHit); }
+    case SHAPE_CUBE:     { return aabbNormal(localHit); }
+    default:             { return vec3f(0, 1, 0); }
+  }
+}
+
+// ── Shape ray-intersection functions ─────────────────────────────────────────
+// All functions return the nearest positive t strictly less than bestT,
+// or -1.0 on a miss (or when the hit would be farther than bestT).
+
+fn raySphereHit(s: vec3f, d: vec3f, bestT: f32) -> f32 {
+  let oc   = s - SPHERE_CENTER;
+  let a    = dot(d, d);
+  let b    = 2.0 * dot(oc, d);
+  let c    = dot(oc, oc) - SPHERE_RADIUS * SPHERE_RADIUS;
+  let disc = b * b - 4.0 * a * c;
+  if (disc < 0.0) { return -1.0; }
+  let sqrtD = sqrt(disc);
+  var t     = (-b - sqrtD) / (2.0 * a);
+  if (t < EPSILON) { t = (-b + sqrtD) / (2.0 * a); }
+  if (t < EPSILON) { return -1.0; }
+  if (bestT >= 0.0 && t >= bestT) { return -1.0; }
+  return t;
+}
+
+fn rayCylinderHit(s: vec3f, d: vec3f, bestT: f32) -> f32 {
+  var hit = -1.0;
+
+  // Curved lateral surface
+  let ox = s.x - CYL_CX;
+  let oz = s.z - CYL_CZ;
+  let a  = d.x * d.x + d.z * d.z;
+  let b  = 2.0 * (ox * d.x + oz * d.z);
+  let c  = ox * ox + oz * oz - CYL_RADIUS * CYL_RADIUS;
+  if (a > EPSILON) {
+    let disc = b * b - 4.0 * a * c;
+    if (disc >= 0.0) {
+      let sqrtD = sqrt(disc);
+      let t1    = (-b - sqrtD) / (2.0 * a);
+      let t2    = (-b + sqrtD) / (2.0 * a);
+      var tc    = t1;
+      var yc    = s.y + tc * d.y;
+      if (tc < EPSILON || yc < CYL_YMIN || yc > CYL_YMAX) {
+        tc = t2; yc = s.y + tc * d.y;
+      }
+      if (tc > EPSILON && yc >= CYL_YMIN && yc <= CYL_YMAX) {
+        if (bestT < 0.0 || tc < bestT) { hit = tc; }
+      }
+    }
+  }
+
+  // Top cap disc
+  if (abs(d.y) > EPSILON) {
+    let tc = (CYL_YMAX - s.y) / d.y;
+    if (tc > EPSILON && (bestT < 0.0 || tc < bestT) && (hit < 0.0 || tc < hit)) {
+      let px = s.x + tc * d.x - CYL_CX;
+      let pz = s.z + tc * d.z - CYL_CZ;
+      if (px * px + pz * pz <= CYL_RADIUS * CYL_RADIUS) { hit = tc; }
+    }
+    // Bottom cap disc
+    let tb = (CYL_YMIN - s.y) / d.y;
+    if (tb > EPSILON && (bestT < 0.0 || tb < bestT) && (hit < 0.0 || tb < hit)) {
+      let px = s.x + tb * d.x - CYL_CX;
+      let pz = s.z + tb * d.z - CYL_CZ;
+      if (px * px + pz * pz <= CYL_RADIUS * CYL_RADIUS) { hit = tb; }
+    }
+  }
+  return hit;
+}
+
+fn rayConeHit(s: vec3f, d: vec3f, bestT: f32) -> f32 {
+  // Cone: apex at (CONE_CX, CONE_YAPEX, CONE_CZ), base at y = CONE_YBASE
+  // Radius at y: r(y) = k * (CONE_YAPEX - y),  k = CONE_BRADIUS / (CONE_YAPEX - CONE_YBASE)
+  let slope = CONE_BRADIUS / (CONE_YAPEX - CONE_YBASE); // positive
+  let ox = s.x - CONE_CX;
+  let oz = s.z - CONE_CZ;
+  let oy = s.y - CONE_YAPEX;  // relative to apex (negative when below)
+  let k2 = slope * slope;
+
+  let a    = d.x * d.x + d.z * d.z - k2 * d.y * d.y;
+  let b    = 2.0 * (ox * d.x + oz * d.z - k2 * oy * d.y);
+  let c    = ox * ox + oz * oz - k2 * oy * oy;
+  var hit  = -1.0;
+
+  if (abs(a) > EPSILON) {
+    let disc = b * b - 4.0 * a * c;
+    if (disc >= 0.0) {
+      let sqrtD = sqrt(disc);
+      let t1    = (-b - sqrtD) / (2.0 * a);
+      let t2    = (-b + sqrtD) / (2.0 * a);
+      var tc    = t1;
+      var yc    = s.y + tc * d.y;
+      if (tc < EPSILON || yc < CONE_YBASE || yc > CONE_YAPEX) {
+        tc = t2; yc = s.y + tc * d.y;
+      }
+      if (tc > EPSILON && yc >= CONE_YBASE && yc <= CONE_YAPEX) {
+        if (bestT < 0.0 || tc < bestT) { hit = tc; }
+      }
+    }
+  }
+
+  // Base disc at CONE_YBASE
+  if (abs(d.y) > EPSILON) {
+    let tb = (CONE_YBASE - s.y) / d.y;
+    if (tb > EPSILON && (bestT < 0.0 || tb < bestT) && (hit < 0.0 || tb < hit)) {
+      let px = s.x + tb * d.x - CONE_CX;
+      let pz = s.z + tb * d.z - CONE_CZ;
+      if (px * px + pz * pz <= CONE_BRADIUS * CONE_BRADIUS) { hit = tb; }
+    }
+  }
+  return hit;
+}
+
+fn rayAABBHit(s: vec3f, d: vec3f, bestT: f32) -> f32 {
+  // Avoid division by zero with a small guard
+  let inv = vec3f(
+    select(1.0 / d.x, 1e30, abs(d.x) < EPSILON),
+    select(1.0 / d.y, 1e30, abs(d.y) < EPSILON),
+    select(1.0 / d.z, 1e30, abs(d.z) < EPSILON),
+  );
+  let t1 = (SCUBE_MIN - s) * inv;
+  let t2 = (SCUBE_MAX - s) * inv;
+  let tNear = max(max(min(t1.x, t2.x), min(t1.y, t2.y)), min(t1.z, t2.z));
+  let tFar  = min(min(max(t1.x, t2.x), max(t1.y, t2.y)), max(t1.z, t2.z));
+  if (tFar < EPSILON || tNear > tFar) { return -1.0; }
+  let t = select(tFar, tNear, tNear > EPSILON);
+  if (t < EPSILON) { return -1.0; }
+  if (bestT >= 0.0 && t >= bestT) { return -1.0; }
+  return t;
+}
+
+// Returns vec2f(t, shapeIdx) for the closest shape hit, or vec2f(-1, -1) on miss.
+fn rayAllShapesIntersection(s: vec3f, d: vec3f, bestT: f32) -> vec2f {
+  var t   = bestT;
+  var idx = -1.0;
+
+  let tSphere = raySphereHit(s, d, t);
+  if (tSphere > 0.0) { t = tSphere; idx = f32(SHAPE_SPHERE); }
+
+  let tCyl = rayCylinderHit(s, d, t);
+  if (tCyl > 0.0) { t = tCyl; idx = f32(SHAPE_CYLINDER); }
+
+  let tCone = rayConeHit(s, d, t);
+  if (tCone > 0.0) { t = tCone; idx = f32(SHAPE_CONE); }
+
+  let tCube = rayAABBHit(s, d, t);
+  if (tCube > 0.0) { t = tCube; idx = f32(SHAPE_CUBE); }
+
+  if (idx < 0.0) { return vec2f(-1.0, -1.0); }
+  return vec2f(t, idx);
+}
+
+
 fn computeUV(faceIdx: i32, localHit: vec3f) -> vec2f {
   switch(faceIdx) {
     case 0:  { return vec2f(localHit.x + 0.5, localHit.y + 0.5); }
@@ -510,7 +734,7 @@ fn shadeSurface(
     let spc = pow(max(dot(V, -R), 0.0), 64.0);
     let ks  = vec4f(0.5, 0.5, 0.5, 0.0);
     let ka  = vec4f(0.1, 0.1, 0.1, 0.0);
-    return emit + diffuseCol * I * NdotL + ks * I * spc + ka * I;
+    return emit + diffuseCol * I * NdotL + ks * I * spc + ka * diffuseCol * I;
 
   } else if (shadingModel == 2) {
     // ── Toon / Cel shading (quantised Phong) ──────────────────────────────────
@@ -520,7 +744,7 @@ fn shadeSurface(
     let ka  = vec4f(0.1, 0.1, 0.1, 0.0);
     return emit + diffuseCol * I * toonQuantize(NdotL)
                 + ks * I * toonQuantize(spc)
-                + ka * I;
+                + ka * diffuseCol * I;
 
   } else if (shadingModel == 3) {
     // ── Blinn-Phong (half-vector model) ───────────────────────────────────────
@@ -530,7 +754,7 @@ fn shadeSurface(
     let spc = pow(max(dot(N, H), 0.0), 128.0);
     let ks  = vec4f(0.5, 0.5, 0.5, 0.0);
     let ka  = vec4f(0.1, 0.1, 0.1, 0.0);
-    return emit + diffuseCol * I * NdotL + ks * I * spc + ka * I;
+    return emit + diffuseCol * I * NdotL + ks * I * spc + ka * diffuseCol * I;
 
   } else if (shadingModel == 4) {
     // ── Cook-Torrance (physically-based) ──────────────────────────────────────
@@ -578,46 +802,55 @@ fn shadeHit(spt: vec3f, rdir: vec3f, hitInfo: vec2f) -> vec4f {
   let faceIdx  = i32(hitInfo.y);
   let localHit = spt + rdir * hitInfo.x;
 
-  // World-space ray direction — used for environment cube-map sampling.
-  let worldRdir = normalize(applyMotorToDir(rdir * box.scale.xyz, box.motor));
-
-  // ── Environment mapping ────────────────────────────────────────────────────
-  // Cube map covers all faces except the floor (when the stone texture is ON).
-  if (texFlags.showCubeMap != 0u && (texFlags.showTexture == 0u || faceIdx != FACE_FLOOR)) {
-    return textureSampleLevel(envMap, texSampler, worldRdir, 0.0);
-  }
-
-  // Raw UV in [0,1] — used for procedural patterns.
-  let rawUV  = computeUV(faceIdx, localHit);
-  // Tiled UV ×4 — used for the high-resolution stone texture and bump map.
-  let tileUV = rawUV * 4.0;
-
-  // ── Diffuse colour ─────────────────────────────────────────────────────────
-  // Priority: stone texture > procedural checkerboard > wood grain > base colour.
   var diffuseCol: vec4f;
-  if (texFlags.showTexture != 0u && faceIdx == FACE_FLOOR) {
-    // Part 1 — Diffuse texture mapping: stone tile on the floor.
-    diffuseCol = textureSampleLevel(floorTex, texSampler, tileUV, 0.0);
-  } else if (texFlags.showProc != 0u && faceIdx == 1) {
-    // Procedural texture: checkerboard on the back wall.
-    diffuseCol = checkerboard(rawUV, 8.0);
-  } else if (faceIdx == 2) {
-    // Procedural texture: wood grain always shown on the left wall.
-    diffuseCol = woodGrain(rawUV);
+  var normal:     vec3f;
+
+  if (faceIdx >= 6) {
+    // ── Shape hit (sphere / cylinder / cone / small cube) ─────────────────────
+    diffuseCol = shapeDiffuseColor(faceIdx);
+    normal     = transformNormal(shapeNormal(faceIdx, localHit));
+
   } else {
-    diffuseCol = boxDiffuseColor(faceIdx);
+    // ── Box face hit ──────────────────────────────────────────────────────────
+
+    // ── Environment mapping ──────────────────────────────────────────────────
+    // Cube map covers box faces only; skip for shapes.
+    let worldRdir = normalize(applyMotorToDir(rdir * box.scale.xyz, box.motor));
+    if (texFlags.showCubeMap != 0u && (texFlags.showTexture == 0u || faceIdx != FACE_FLOOR)) {
+      return textureSampleLevel(envMap, texSampler, worldRdir, 0.0);
+    }
+
+    // Raw UV in [0,1] — used for procedural patterns.
+    let rawUV  = computeUV(faceIdx, localHit);
+    // Tiled UV ×4 — used for the high-resolution stone texture and bump map.
+    let tileUV = rawUV * 4.0;
+
+    // ── Diffuse colour ───────────────────────────────────────────────────────
+    // Priority: stone texture > procedural checkerboard > wood grain > base colour.
+    if (texFlags.showTexture != 0u && faceIdx == FACE_FLOOR) {
+      // Part 1 — Diffuse texture mapping: stone tile on the floor.
+      diffuseCol = textureSampleLevel(floorTex, texSampler, tileUV, 0.0);
+    } else if (texFlags.showProc != 0u && faceIdx == 1) {
+      // Procedural texture: checkerboard on the back wall.
+      diffuseCol = checkerboard(rawUV, 8.0);
+    } else if (faceIdx == 2) {
+      // Procedural texture: wood grain always shown on the left wall.
+      diffuseCol = woodGrain(rawUV);
+    } else {
+      diffuseCol = boxDiffuseColor(faceIdx);
+    }
+
+    // ── Normal computation ───────────────────────────────────────────────────
+    // Part 2 — Bump mapping: perturbs the face normal using stone-tile luminance.
+    var n = boxNormal(faceIdx);
+    if (texFlags.showBump != 0u) {
+      n = computeBumpNormal(faceIdx, tileUV);
+    }
+    normal = transformNormal(n);
   }
 
-  // ── Normal computation ─────────────────────────────────────────────────────
-  // Part 2 — Bump mapping: perturbs the face normal using stone-tile luminance.
-  var normal = boxNormal(faceIdx);
-  if (texFlags.showBump != 0u) {
-    normal = computeBumpNormal(faceIdx, tileUV);
-  }
-  normal = transformNormal(normal);
-
-  // ── Lighting ───────────────────────────────────────────────────────────────
-  let emit     = boxEmitColor();
+  // ── Lighting ─────────────────────────────────────────────────────────────
+  let emit      = boxEmitColor();
   let lightPos  = applyMotorToPoint(light.position.xyz,  reverse(cameraPose.motor));
   let lightDir  = applyMotorToDir(light.direction.xyz,   reverse(cameraPose.motor));
   var hitPt     = transformHitPoint(localHit);
@@ -642,6 +875,9 @@ fn computeOrthogonalMain(@builtin(global_invocation_id) global_id: vec3u) {
   rdir = transformDir(rdir);
 
   var hitInfo = rayBoxIntersection(spt, rdir);
+  // Check shapes — only take a shape hit if it is closer than the box wall.
+  let shapeHit = rayAllShapesIntersection(spt, rdir, hitInfo.x);
+  if (shapeHit.x > 0.0) { hitInfo = shapeHit; }
   var color   = BG_COLOR;
 
   if (hitInfo.x > 0) {
@@ -669,6 +905,9 @@ fn computeProjectiveMain(@builtin(global_invocation_id) global_id: vec3u) {
   rdir = transformDir(rdir);
 
   var hitInfo = rayBoxIntersection(spt, rdir);
+  // Check shapes — only take a shape hit if it is closer than the box wall.
+  let shapeHit = rayAllShapesIntersection(spt, rdir, hitInfo.x);
+  if (shapeHit.x > 0.0) { hitInfo = shapeHit; }
   var color   = BG_COLOR;
 
   if (hitInfo.x > 0) {
