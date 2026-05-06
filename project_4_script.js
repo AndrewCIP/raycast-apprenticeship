@@ -155,7 +155,7 @@ init().then(ret => {
   console.log(ret);
 }).catch(error => {
   const pTag = document.createElement('p');
-  pTag.innerHTML = navigator.userAgent + '</br>' + error.message;
+  pTag.innerHTML = navigator.userAgent + '<br/>' + error.message;
   document.body.appendChild(pTag);
   document.getElementById('renderCanvas').remove();
 });
