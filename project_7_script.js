@@ -670,7 +670,7 @@ async function main() {
     renderer._device,
     renderer._canvasFormat,
     camera,
-    '/project_7_vol.wgsl'
+    '/lib/Shaders/project_7_vol.wgsl'
   );
 
   updateHUD(0, camera);

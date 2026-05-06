@@ -158,7 +158,7 @@ async function init() {
     renderer._device,
     renderer._canvasFormat,
     camera,
-    '/project_9_light.wgsl'
+    '/lib/Shaders/project_9_light.wgsl'
   );
   await renderer.setTracerObject(scene);
 

@@ -327,7 +327,7 @@ async function init() {
     renderer._device,
     renderer._canvasFormat,
     camera,
-    '/project_8_light.wgsl'
+    '/lib/Shaders/project_8_light.wgsl'
   );
   await renderer.setTracerObject(lightBox);
 
