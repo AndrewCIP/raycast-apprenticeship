@@ -452,11 +452,52 @@ fn rand(uv: vec2i, sampleIdx: u32) -> f32 {
   return f32(pcg(seed)) / 4294967295.0;
 }
 
-// castShadowRay: returns true when the box is hit before maxDist (box-local units).
-// A small offset is added to the origin to avoid self-intersection.
+// ── Floating spheres ─────────────────────────────────────────────────────────
+// Two spheres suspended inside the box (box-local coordinates, range ±0.5).
+// Their shadows fall on the floor, making hard vs. soft shadow differences
+// clearly visible to the viewer.
+//   Sphere 0: larger, near-centre — main shadow caster
+//   Sphere 1: smaller, off-centre — secondary caster for variety
+const SPHERE0_CENTER: vec3f = vec3f( 0.00, -0.22,  0.05);
+const SPHERE0_RADIUS: f32   = 0.14;
+const SPHERE1_CENTER: vec3f = vec3f( 0.22, -0.35, -0.08);
+const SPHERE1_RADIUS: f32   = 0.09;
+
+// Ray–sphere intersection.  Returns the nearest positive t, or −1 if no hit.
+fn raySphereIntersect(orig: vec3f, dir: vec3f, center: vec3f, radius: f32) -> f32 {
+  let oc   = orig - center;
+  let b    = dot(oc, dir);
+  let c    = dot(oc, oc) - radius * radius;
+  let disc = b * b - c;
+  if (disc < 0.0) { return -1.0; }
+  let sq = sqrt(disc);
+  let t0 = -b - sq;
+  if (t0 > 0.0) { return t0; }
+  let t1 = -b + sq;
+  if (t1 > 0.0) { return t1; }
+  return -1.0;
+}
+
+// Test all scene spheres; return vec2f(t, sphereIdx) – t < 0 means no hit.
+fn closestSphereHit(orig: vec3f, dir: vec3f) -> vec2f {
+  var best = vec2f(-1.0, -1.0);
+  let t0   = raySphereIntersect(orig, dir, SPHERE0_CENTER, SPHERE0_RADIUS);
+  if (t0 > 0.0 && (best.x < 0.0 || t0 < best.x)) { best = vec2f(t0, 0.0); }
+  let t1   = raySphereIntersect(orig, dir, SPHERE1_CENTER, SPHERE1_RADIUS);
+  if (t1 > 0.0 && (best.x < 0.0 || t1 < best.x)) { best = vec2f(t1, 1.0); }
+  return best;
+}
+
+// castShadowRay: returns true when any scene object (box or sphere) is hit
+// before maxDist (box-local units).  A small epsilon offset avoids
+// self-intersection at the ray origin.
 fn castShadowRay(localOrig: vec3f, shadowDir: vec3f, maxDist: f32) -> bool {
-  let hit = rayBoxIntersection(localOrig + shadowDir * 0.001, shadowDir);
-  return hit.x > 0.0 && hit.x < maxDist;
+  let orig   = localOrig + shadowDir * 0.001;
+  let boxHit = rayBoxIntersection(orig, shadowDir);
+  if (boxHit.x > 0.0 && boxHit.x < maxDist) { return true; }
+  let sphHit = closestSphereHit(orig, shadowDir);
+  if (sphHit.x > 0.0 && sphHit.x < maxDist) { return true; }
+  return false;
 }
 
 // computeHardShadow: single shadow ray — returns 0.1 (occluded) or 1.0 (lit).
@@ -544,9 +585,14 @@ fn computeSoftShadow(
     let dist      = length(toLight);
     if (dist < 0.001) { return 1.0; }
     let shadowDir = toLight / dist;
-    let shadowHit = rayBoxIntersection(localHit + shadowDir * 0.001, shadowDir);
-    if (shadowHit.x > 0.0 && shadowHit.x < dist) {
-      return max(pow(min(shadowHit.x, 1.0), 0.85), 0.1);
+    let orig   = localHit + shadowDir * 0.001;
+    let boxOcc = rayBoxIntersection(orig, shadowDir);
+    let sphOcc = closestSphereHit(orig, shadowDir);
+    var occT   = -1.0;
+    if (boxOcc.x > 0.0 && boxOcc.x < dist) { occT = boxOcc.x; }
+    if (sphOcc.x > 0.0 && sphOcc.x < dist && (occT < 0.0 || sphOcc.x < occT)) { occT = sphOcc.x; }
+    if (occT > 0.0) {
+      return max(pow(min(occT, 1.0), 0.85), 0.1);
     }
     return 1.0;
   }
@@ -630,6 +676,53 @@ fn shadeHit(spt: vec3f, rdir: vec3f, hitInfo: vec2f, uv: vec2i) -> vec4f {
   return shadeSurface(emit, diffuseCol, normal, lightInfo, camPos, hitPt);
 }
 
+// ── Sphere shading ────────────────────────────────────────────────────────────
+// Applies Phong lighting and shadows to a sphere hit.  Spheres are defined in
+// box-local space so they can cast shadows on the floor and walls.
+fn shadeSphereHit(spt: vec3f, rdir: vec3f, t: f32, sphereIdx: i32, uv: vec2i) -> vec4f {
+  let localHit = spt + rdir * t;
+
+  // Per-sphere material
+  var center:     vec3f;
+  var radius:     f32;
+  var diffuseCol: vec4f;
+  if (sphereIdx == 0) {
+    center     = SPHERE0_CENTER;
+    radius     = SPHERE0_RADIUS;
+    diffuseCol = vec4f(0.90, 0.40, 0.10, 1.0); // warm orange
+  } else {
+    center     = SPHERE1_CENTER;
+    radius     = SPHERE1_RADIUS;
+    diffuseCol = vec4f(0.20, 0.55, 0.90, 1.0); // cool blue
+  }
+
+  // Outward surface normal: local-space → world-space
+  let localNormal = normalize(localHit - center);
+  let normal      = transformNormal(localNormal);
+
+  let hitPt     = transformHitPoint(localHit);
+  let lightPos  = applyMotorToPoint(light.position.xyz, reverse(cameraPose.motor));
+  let lightDir  = applyMotorToDir(light.direction.xyz,  reverse(cameraPose.motor));
+  var lightInfo = getLightInfo(lightPos, lightDir, hitPt);
+
+  // Shadow computation (same pipeline as the box, but originating on the sphere)
+  if (shadowFlags.enabled != 0u) {
+    let lightPosLocal = applyMotorToPoint(lightPos, reverse(box.motor)) / box.scale.xyz;
+    let lightDirLocal = normalize(applyMotorToDir(lightDir, reverse(box.motor)) / box.scale.xyz);
+    let lightType     = i32(light.params[2]);
+    var shadowFactor: f32;
+    if (shadowFlags.mode == 0u) {
+      shadowFactor = computeHardShadow(localHit, lightPosLocal, lightDirLocal, lightType);
+    } else {
+      shadowFactor = computeSoftShadow(localHit, lightPosLocal, lightDirLocal, lightType, uv);
+    }
+    lightInfo.intensity *= shadowFactor;
+  }
+
+  let camPos = applyMotorToPoint(vec3f(0, 0, 0), cameraPose.motor);
+  return shadeSurface(vec4f(0, 0, 0, 1), diffuseCol, normal, lightInfo, camPos, hitPt);
+}
+
 // ── Orthographic camera entry point ──────────────────────────────────────────
 @compute @workgroup_size(16, 16)
 fn computeOrthogonalMain(@builtin(global_invocation_id) global_id: vec3u) {
@@ -644,11 +737,14 @@ fn computeOrthogonalMain(@builtin(global_invocation_id) global_id: vec3u) {
   spt  = transformPt(spt);
   rdir = transformDir(rdir);
 
-  var hitInfo = rayBoxIntersection(spt, rdir);
-  var color   = vec4f(0./255, 56./255, 101./255, 1.); // Bucknell Blue background
+  let boxHit = rayBoxIntersection(spt, rdir);
+  let sphHit = closestSphereHit(spt, rdir);
+  var color  = vec4f(0./255, 56./255, 101./255, 1.); // Bucknell Blue background
 
-  if (hitInfo.x > 0) {
-    color = shadeHit(spt, rdir, hitInfo, uv);
+  if (sphHit.x > 0.0 && (boxHit.x < 0.0 || sphHit.x < boxHit.x)) {
+    color = shadeSphereHit(spt, rdir, sphHit.x, i32(sphHit.y), uv);
+  } else if (boxHit.x > 0.0) {
+    color = shadeHit(spt, rdir, boxHit, uv);
   }
 
   textureStore(outTexture, uv, color);
@@ -671,11 +767,14 @@ fn computeProjectiveMain(@builtin(global_invocation_id) global_id: vec3u) {
   spt  = transformPt(spt);
   rdir = transformDir(rdir);
 
-  var hitInfo = rayBoxIntersection(spt, rdir);
-  var color   = vec4f(0./255, 56./255, 101./255, 1.); // Bucknell Blue background
+  let boxHit = rayBoxIntersection(spt, rdir);
+  let sphHit = closestSphereHit(spt, rdir);
+  var color  = vec4f(0./255, 56./255, 101./255, 1.); // Bucknell Blue background
 
-  if (hitInfo.x > 0) {
-    color = shadeHit(spt, rdir, hitInfo, uv);
+  if (sphHit.x > 0.0 && (boxHit.x < 0.0 || sphHit.x < boxHit.x)) {
+    color = shadeSphereHit(spt, rdir, sphHit.x, i32(sphHit.y), uv);
+  } else if (boxHit.x > 0.0) {
+    color = shadeHit(spt, rdir, boxHit, uv);
   }
 
   textureStore(outTexture, uv, color);
