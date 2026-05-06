@@ -1,144 +1,81 @@
-import PerlinNoise from '/lib/Scene/Noises.js'
+import RayTracer             from '/lib/Viz/RayTracer.js'
+import VolumeRenderingObject from '/lib/Scene/VolumeRenderingObject.js'
+import Camera                from '/lib/Viz/3DCamera.js'
+import TerrainData           from '/lib/DS/TerrainData.js'
 
-// ── Rendering modes ───────────────────────────────────────────────────────────
-const MODE_GRAYSCALE  = 0;
-const MODE_COLOR      = 1;
-const MODE_OCTAVE     = 2;
-const MODE_NAMES = [
-  'Grayscale (noise2d)',
-  'Color terrain (noise2d)',
-  'Octave terrain (octaveNoise2d)',
-];
+// ── Scroll12TerrainObject ────────────────────────────────────────────────────
+//
+// Extends VolumeRenderingObject to render a procedurally generated terrain
+// volume built from Perlin noise (2-D heightmap fBm + 3-D cave carving).
+// TerrainData replaces the usual file-based VolumeData as the volume source.
 
-// ── Map a noise value in [-1, 1] to a grayscale byte ─────────────────────────
-function toGray(n) {
-  return Math.max(0, Math.min(255, Math.floor((n + 1) * 0.5 * 255)));
-}
-
-// ── Map a noise value in [-1, 1] to an RGBA terrain color ───────────────────
-function toTerrain(n, data, i) {
-  const h = (n + 1) * 0.5; // normalise to [0, 1]
-  let r, g, b;
-  if      (h < 0.30) { r = 30;  g = 80;  b = 180; } // deep water
-  else if (h < 0.40) { r = 65;  g = 120; b = 210; } // shallow water
-  else if (h < 0.45) { r = 210; g = 195; b = 140; } // sand / beach
-  else if (h < 0.65) { r = 85;  g = 150; b = 70;  } // grass
-  else if (h < 0.78) { r = 100; g = 100; b = 80;  } // dirt / rock
-  else if (h < 0.90) { r = 130; g = 130; b = 125; } // stone
-  else               { r = 240; g = 240; b = 255; } // snow
-  data[i    ] = r;
-  data[i + 1] = g;
-  data[i + 2] = b;
-  data[i + 3] = 255;
-}
-
-// ── Draw the noise into the canvas ───────────────────────────────────────────
-function drawNoise(ctx, noise, mode, freq, octaves) {
-  const W = ctx.canvas.width;
-  const H = ctx.canvas.height;
-  const img = ctx.createImageData(W, H);
-  const d = img.data;
-
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
-      const i = (y * W + x) * 4;
-      let n;
-      if (mode === MODE_OCTAVE) {
-        n = noise.octaveNoise2d(x, y, freq, 1, 0.5, octaves, 2);
-        // octave sum can exceed [-1,1]; clamp before mapping
-        n = Math.max(-1, Math.min(1, n));
-      } else {
-        n = noise.noise2d(x * freq * 200, y * freq * 200);
-      }
-
-      if (mode === MODE_COLOR || mode === MODE_OCTAVE) {
-        toTerrain(n, d, i);
-      } else {
-        const v = toGray(n);
-        d[i    ] = v;
-        d[i + 1] = v;
-        d[i + 2] = v;
-        d[i + 3] = 255;
-      }
-    }
+class Scroll12TerrainObject extends VolumeRenderingObject {
+  constructor(device, canvasFormat, camera, shaderFile) {
+    // Pass null as the volumeFile — createGeometry() will replace the volume
+    // with a TerrainData instance before super.createGeometry() is called.
+    super(device, canvasFormat, camera, null, shaderFile);
   }
 
-  ctx.putImageData(img, 0, 0);
-}
+  async createGeometry() {
+    // Replace the dummy VolumeData(null) set by the parent constructor
+    this._volume = new TerrainData();
+    // Parent's createGeometry calls this._volume.init() then creates GPU buffers
+    await super.createGeometry();
+  }
 
-// ── Verification: print expected noise properties to the console ──────────────
-function runVerification(noise) {
-  console.log('=== Perlin Noise Verification ===');
+  async createComputePipeline() {
+    const make = (entry) => this._device.createComputePipeline({
+      label: `Scroll12 ${entry}`,
+      layout: this._pipelineLayout,
+      compute: { module: this._shaderModule, entryPoint: entry },
+    });
 
-  // Property 1: noise2d and noise3d produce non-trivial, varying output
-  const s1 = noise.noise2d(0.3, 0.7);
-  const s2 = noise.noise2d(1.3, 2.7);
-  const s3 = noise.noise2d(5.5, 3.2);
-  console.log(`noise2d samples: ${s1.toFixed(4)}, ${s2.toFixed(4)}, ${s3.toFixed(4)}`);
-  const vary2d = !(s1 === s2 && s2 === s3);
-  console.log(`noise2d varies:  ${vary2d ? 'PASS' : 'FAIL'}`);
-
-  // Property 2: output is bounded (gradient dot products are bounded by the gradient magnitudes)
-  const samples2d = [noise.noise2d(0.5, 0.5), noise.noise2d(0.25, 0.75), noise.noise2d(0.1, 0.9)];
-  const samples3d = [noise.noise3d(0.5, 0.5, 0.5), noise.noise3d(0.25, 0.75, 0.25)];
-  const bounded2d = samples2d.every(v => v >= -2 && v <= 2);
-  const bounded3d = samples3d.every(v => v >= -2 && v <= 2);
-  console.log(`noise2d bounded [-2,2]: ${bounded2d ? 'PASS' : 'FAIL'}`);
-  console.log(`noise3d bounded [-2,2]: ${bounded3d ? 'PASS' : 'FAIL'}`);
-
-  // Property 3: octave noise sums multiple scales
-  const single = noise.noise2d(100 * 0.005, 200 * 0.005);
-  const octave = noise.octaveNoise2d(100, 200, 0.005, 1, 0.5, 4, 2);
-  console.log(`noise2d (1 octave):    ${single.toFixed(6)}`);
-  console.log(`octaveNoise2d (4 oct): ${octave.toFixed(6)}`);
-  const octavesDiffer = Math.abs(single - octave) > 1e-9;
-  console.log(`Octave accumulates:    ${octavesDiffer ? 'PASS' : 'FAIL'}`);
-
-  console.log('=================================');
+    this._computePipeline           = make('computeOrthogonalTerrainMain');
+    this._computeProjectivePipeline = make('computeProjectiveTerrainMain');
+  }
 }
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
 async function init() {
-  const noise = new PerlinNoise();
-
-  // Run console verification before drawing anything
-  runVerification(noise);
-
-  // ── Canvas ────────────────────────────────────────────────────────────────
+  // ── Canvas & renderer ──────────────────────────────────────────────────────
   const canvasTag = document.createElement('canvas');
   canvasTag.id = 'renderCanvas';
   document.body.appendChild(canvasTag);
 
-  const ctx = canvasTag.getContext('2d');
+  const renderer = new RayTracer(canvasTag);
+  await renderer.init();
 
-  let mode    = MODE_GRAYSCALE;
-  let freq    = 0.005;
-  let octaves = 4;
+  // ── Camera ─────────────────────────────────────────────────────────────────
+  // Start in projective (perspective) mode with a tighter FOV for terrain.
+  const camera = new Camera();
+  camera._isProjective  = true;
+  camera._focal[0]      = 2.0;
+  camera._focal[1]      = 2.0;
 
-  function resize() {
-    const dpr = window.devicePixelRatio || 1;
-    canvasTag.width  = Math.floor(window.innerWidth  * dpr);
-    canvasTag.height = Math.floor(window.innerHeight * dpr);
-    canvasTag.style.width  = `${window.innerWidth}px`;
-    canvasTag.style.height = `${window.innerHeight}px`;
-    draw();
-  }
+  // Position the camera above and behind the terrain volume, looking down
+  // at roughly 45 degrees for an isometric-style Minecraft view.
+  //   rotateX(π/4)  → forward = (0, −0.707, +0.707)  [tilts nose downward]
+  //   moveZ(−1.5)   → pulls camera back along local z  → world pos ≈ (0, 1.06, −1.06)
+  //   moveY(+0.25)  → raises slightly in camera's up direction
+  camera.rotateX(Math.PI / 4);
+  camera.moveZ(-1.5);
+  camera.moveY(0.25);
 
-  function draw() {
-    drawNoise(ctx, noise, mode, freq, octaves);
-    updateHud();
-  }
+  // ── Terrain scene object ───────────────────────────────────────────────────
+  const terrainObj = new Scroll12TerrainObject(
+    renderer._device,
+    renderer._canvasFormat,
+    camera,
+    '/scroll_12_vol.wgsl'
+  );
+  await renderer.setTracerObject(terrainObj);
 
-  // ── HUD ───────────────────────────────────────────────────────────────────
-  const hud = document.createElement('div');
-  hud.id = 'hud';
+  // ── Step sizes ─────────────────────────────────────────────────────────────
+  const moveStep = 0.04;
+  const rotStep  = Math.PI / 36; // 5 degrees
 
-  const titleEl = document.createElement('div');
-  titleEl.className   = 'hud-title';
-  titleEl.textContent = 'Scroll 12 — Perlin Noise';
-  hud.appendChild(titleEl);
-
+  // ── HUD helpers ────────────────────────────────────────────────────────────
   function addKey(parent, label) {
     const btn = document.createElement('span');
     btn.className   = 'hud-button';
@@ -158,40 +95,57 @@ async function init() {
     parent.appendChild(row);
   }
 
-  function addSection(parent, title) {
+  function addSection(hud, title) {
     const sec = document.createElement('div');
     sec.className = 'hud-section';
     const hdr = document.createElement('div');
     hdr.className   = 'hud-section-header';
     hdr.textContent = title;
     sec.appendChild(hdr);
-    parent.appendChild(sec);
+    hud.appendChild(sec);
     return sec;
   }
 
-  // RENDERING MODE
-  const renderSec = addSection(hud, 'RENDERING MODE');
-  addRow(renderSec, 'Grayscale (noise2d)',          ['1']);
-  addRow(renderSec, 'Color terrain (noise2d)',       ['2']);
-  addRow(renderSec, 'Octave terrain (octaveNoise2d)', ['3']);
+  // ── Build HUD ──────────────────────────────────────────────────────────────
+  const hud = document.createElement('div');
+  hud.id = 'hud';
 
-  const modeEl = document.createElement('span');
-  modeEl.className = 'hud-value';
-  addRow(renderSec, 'Active mode', [], modeEl);
+  const titleEl = document.createElement('div');
+  titleEl.className   = 'hud-title';
+  titleEl.textContent = 'Scroll 12 — Perlin Noise Terrain';
+  hud.appendChild(titleEl);
 
-  // PARAMETERS
-  const paramSec = addSection(hud, 'PARAMETERS');
+  // CAMERA MOVEMENT
+  const movSec = addSection(hud, 'CAMERA MOVEMENT');
+  addRow(movSec, 'Move Forward / Back', ['W', 'S']);
+  addRow(movSec, 'Move Left / Right',   ['A', 'D']);
+  addRow(movSec, 'Move Up / Down',      ['Q', 'E']);
 
-  const freqEl = document.createElement('span');
-  freqEl.className = 'hud-value';
-  addRow(paramSec, 'Frequency', ['+', '-'], freqEl);
+  // CAMERA ROTATION
+  const rotSec = addSection(hud, 'CAMERA ROTATION');
+  addRow(rotSec, 'Pitch (X-axis)', ['↑', '↓']);
+  addRow(rotSec, 'Yaw (Y-axis)',   ['←', '→']);
+  addRow(rotSec, 'Roll (Z-axis)',  ['Z', 'X']);
 
-  const octEl = document.createElement('span');
-  octEl.className = 'hud-value';
-  addRow(paramSec, 'Octaves (octave mode)', ['[', ']'], octEl);
+  // CAMERA SETTINGS
+  const camSec = addSection(hud, 'CAMERA');
 
-  addRow(paramSec, 'Regenerate permutation', ['R']);
+  const hudModeEl = document.createElement('span');
+  hudModeEl.className = 'hud-value';
+  addRow(camSec, 'Toggle Projective / Orthographic', ['P'], hudModeEl);
 
+  const hudFocalEl = document.createElement('span');
+  hudFocalEl.className = 'hud-value';
+  addRow(camSec, 'Focal Length', ['+', '-'], hudFocalEl);
+
+  addRow(camSec, 'Reset Camera', ['R']);
+
+  // NOISE INFO
+  const noiseSec = addSection(hud, 'PROCEDURAL GENERATION');
+  addRow(noiseSec, 'Heightmap', ['noise2D', '+', 'fBm']);
+  addRow(noiseSec, 'Caves',     ['noise3D']);
+
+  // Bottom hint
   const info = document.createElement('div');
   info.className   = 'hud-info';
   info.textContent = 'H — Hide / Show HUD';
@@ -199,6 +153,7 @@ async function init() {
 
   document.body.appendChild(hud);
 
+  // Show-HUD button (visible only when HUD is hidden)
   const showBtn = document.createElement('button');
   showBtn.id          = 'show-hud-toggle';
   showBtn.textContent = 'Show HUD';
@@ -208,37 +163,75 @@ async function init() {
   });
   document.body.appendChild(showBtn);
 
-  function updateHud() {
-    modeEl.textContent = MODE_NAMES[mode];
-    freqEl.textContent = freq.toFixed(4);
-    octEl.textContent  = octaves;
+  // ── Live-value updaters ────────────────────────────────────────────────────
+  function updateHudCameraMode() {
+    hudModeEl.textContent = camera._isProjective ? 'Projective' : 'Orthographic';
+  }
+  function updateHudFocal() {
+    hudFocalEl.textContent = `fx:${camera._focal[0].toFixed(1)}  fy:${camera._focal[1].toFixed(1)}`;
   }
 
-  // ── Keyboard ──────────────────────────────────────────────────────────────
+  updateHudCameraMode();
+  updateHudFocal();
+
+  // ── Keyboard interaction ───────────────────────────────────────────────────
   window.addEventListener('keydown', (e) => {
+    let cameraDirty = false;
+
     switch (e.key) {
-      case '1': mode = MODE_GRAYSCALE; draw(); break;
-      case '2': mode = MODE_COLOR;     draw(); break;
-      case '3': mode = MODE_OCTAVE;    draw(); break;
+      // ── Camera translation ──────────────────────────────────────────────
+      case 'w': camera.moveZ( moveStep); cameraDirty = true; break;
+      case 's': camera.moveZ(-moveStep); cameraDirty = true; break;
+      case 'a': camera.moveX(-moveStep); cameraDirty = true; break;
+      case 'd': camera.moveX( moveStep); cameraDirty = true; break;
+      case 'q': camera.moveY( moveStep); cameraDirty = true; break;
+      case 'e': camera.moveY(-moveStep); cameraDirty = true; break;
 
+      // ── Camera rotation ─────────────────────────────────────────────────
+      case 'ArrowUp':    camera.rotateX(-rotStep); cameraDirty = true; break;
+      case 'ArrowDown':  camera.rotateX( rotStep); cameraDirty = true; break;
+      case 'ArrowLeft':  camera.rotateY(-rotStep); cameraDirty = true; break;
+      case 'ArrowRight': camera.rotateY( rotStep); cameraDirty = true; break;
+      case 'z': camera.rotateZ(-rotStep); cameraDirty = true; break;
+      case 'x': camera.rotateZ( rotStep); cameraDirty = true; break;
+
+      // ── Camera mode toggle ──────────────────────────────────────────────
+      case 'p':
+        camera._isProjective = !camera._isProjective;
+        updateHudCameraMode();
+        cameraDirty = true;
+        break;
+
+      // ── Focal length ────────────────────────────────────────────────────
       case '+': case '=':
-        freq = Math.min(0.05, +(freq + 0.001).toFixed(4));
-        draw(); break;
+        camera._focal[0] += 0.2;
+        camera._focal[1] += 0.2;
+        terrainObj.updateCameraFocal();
+        updateHudFocal();
+        break;
       case '-':
-        freq = Math.max(0.001, +(freq - 0.001).toFixed(4));
-        draw(); break;
+        camera._focal[0] = Math.max(0.2, camera._focal[0] - 0.2);
+        camera._focal[1] = Math.max(0.2, camera._focal[1] - 0.2);
+        terrainObj.updateCameraFocal();
+        updateHudFocal();
+        break;
 
-      case ']':
-        octaves = Math.min(8, octaves + 1);
-        draw(); break;
-      case '[':
-        octaves = Math.max(1, octaves - 1);
-        draw(); break;
+      // ── Camera reset ────────────────────────────────────────────────────
+      case 'r':
+        camera.resetPose();
+        camera._isProjective = true;
+        camera._focal[0]     = 2.0;
+        camera._focal[1]     = 2.0;
+        camera.rotateX(Math.PI / 4);
+        camera.moveZ(-1.5);
+        camera.moveY(0.25);
+        terrainObj.updateCameraFocal();
+        updateHudCameraMode();
+        updateHudFocal();
+        cameraDirty = true;
+        break;
 
-      case 'r': case 'R':
-        noise.gradientPermutation();
-        draw(); break;
-
+      // ── HUD toggle ──────────────────────────────────────────────────────
       case 'h': case 'H':
         if (hud.style.display === 'none') {
           hud.style.display     = '';
@@ -247,16 +240,24 @@ async function init() {
           hud.style.display     = 'none';
           showBtn.style.display = '';
         }
-        return;
+        return; // no GPU update needed
 
       default: return;
     }
+
+    if (cameraDirty) {
+      terrainObj.updateCameraPose();
+    }
   });
 
-  window.addEventListener('resize', resize);
-  resize();
+  // ── Render loop ────────────────────────────────────────────────────────────
+  function renderFrame() {
+    renderer.render();
+    requestAnimationFrame(renderFrame);
+  }
+  renderFrame();
 
-  return ctx;
+  return renderer;
 }
 
 init().then(ret => {
