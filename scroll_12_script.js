@@ -67,7 +67,7 @@ async function init() {
     renderer._device,
     renderer._canvasFormat,
     camera,
-    '/Shaders/scroll_12_vol.wgsl'
+    '/lib/Shaders/scroll_12_vol.wgsl'
   );
   await renderer.setTracerObject(terrainObj);
 

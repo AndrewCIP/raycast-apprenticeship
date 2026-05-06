@@ -286,7 +286,7 @@ async function init() {
     renderer._device,
     renderer._canvasFormat,
     camera,
-    '/Shaders/scroll_15_light.wgsl'
+    '/lib/Shaders/scroll_15_light.wgsl'
   );
   await renderer.setTracerObject(lightBox);
 
