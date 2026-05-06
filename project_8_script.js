@@ -1,4 +1,27 @@
 /*
+ * Copyright (c) 2026 Sing Chun LEE @ Bucknell University. CC BY-NC 4.0.
+ *
+ * This code is provided mainly for educational purposes at University of the Pacific.
+ *
+ * This code is licensed under the Creative Commons Attribution-NonCommercial 4.0
+ * International License. To view a copy of the license, visit
+ *   https://creativecommons.org/licenses/by-nc/4.0/
+ * or send a letter to Creative Commons, PO Box 1866, Mountain View, CA 94042, USA.
+ *
+ * You are free to:
+ *  - Share: copy and redistribute the material in any medium or format.
+ *  - Adapt: remix, transform, and build upon the material.
+ *
+ * Under the following terms:
+ *  - Attribution: You must give appropriate credit, provide a link to the license,
+ *                 and indicate if changes were made.
+ *  - NonCommercial: You may not use the material for commercial purposes.
+ *  - No additional restrictions: You may not apply legal terms or technological
+ *                                measures that legally restrict others from doing
+ *                                anything the license permits.
+ */
+
+/*
  * Project 8 — Materials Studio
  *
  * Demonstrates all required lighting, shading, and texture features using
@@ -423,7 +446,7 @@ async function init() {
   // Shading models
   const shadeSec = addSection(hud, 'SHADING MODEL');
   addRow(shadeSec, 'Lambertian (flat / diffuse only)', ['4']);
-  addRow(shadeSec, 'Phong  (diffuse + specular + ambient)', ['5']);
+  addRow(shadeSec, 'Phong (diffuse + specular + ambient)', ['5']);
   addRow(shadeSec, 'Toon / Cel  (quantised Phong)', ['6']);
   addRow(shadeSec, 'Blinn-Phong  (half-vector specular)', ['7']);
   addRow(shadeSec, 'Cook-Torrance  (PBR — GGX + Fresnel)', ['8']);

@@ -356,6 +356,9 @@ fn woodGrain(uv: vec2f) -> vec4f {
 
 const PI: f32 = 3.14159265359;
 
+// Background colour shown when a ray misses the box entirely.
+const BG_COLOR: vec4f = vec4f(0./255, 56./255, 101./255, 1.); // Bucknell Blue
+
 // GGX (Trowbridge-Reitz) normal distribution function.
 fn distributionGGX(N: vec3f, H: vec3f, roughness: f32) -> f32 {
   let a    = roughness * roughness;
@@ -639,7 +642,7 @@ fn computeOrthogonalMain(@builtin(global_invocation_id) global_id: vec3u) {
   rdir = transformDir(rdir);
 
   var hitInfo = rayBoxIntersection(spt, rdir);
-  var color   = vec4f(0./255, 56./255, 101./255, 1.); // Bucknell Blue background
+  var color   = BG_COLOR;
 
   if (hitInfo.x > 0) {
     color = shadeHit(spt, rdir, hitInfo);
@@ -666,7 +669,7 @@ fn computeProjectiveMain(@builtin(global_invocation_id) global_id: vec3u) {
   rdir = transformDir(rdir);
 
   var hitInfo = rayBoxIntersection(spt, rdir);
-  var color   = vec4f(0./255, 56./255, 101./255, 1.); // Bucknell Blue background
+  var color   = BG_COLOR;
 
   if (hitInfo.x > 0) {
     color = shadeHit(spt, rdir, hitInfo);
