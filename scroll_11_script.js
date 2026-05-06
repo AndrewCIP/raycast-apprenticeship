@@ -85,7 +85,7 @@ async function init() {
     renderer._canvasFormat,
     camera,
     '/assets/brainweb-t1-1mm-pn0-rf0.raws',
-    '/scroll_11_vol.wgsl'
+    '/Shaders/scroll_11_vol.wgsl'
   );
   await renderer.setTracerObject(volObj);
 
